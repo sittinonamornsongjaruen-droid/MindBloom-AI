@@ -1920,11 +1920,11 @@
 
         .squishy-frame {
             width: 100%;
-            min-height: 680px;
+            min-height: 620px;
             height: 72vh;
             max-height: 760px;
             border: none;
-            border-radius: 28px;
+            border-radius: 22px;
             background: #fdf3df;
             box-shadow: 0 12px 30px rgba(119, 102, 72, 0.08);
         }
@@ -3778,7 +3778,7 @@ button,
         <strong>เรย์</strong>
         <span>นักจิตวิทยาอาสา · MindBloom AI</span>
       </div>
-      <div id="stressBadge" class="stress-badge"><span class="stress-face"><img src="stress-green.png" alt="ระดับต่ำ"></span> ระดับต่ำ</div>
+      <div id="stressBadge" class="stress-badge"><span class="stress-face"><img src="https://drive.google.com/uc?export=view&id=1ouR-YCAt19fe91K19-mCVaEIuAOt_ztY" alt="ระดับต่ำ"></span> ระดับต่ำ</div>
       <div class="online-dot"></div>
     </div>
     <div class="chat-messages" id="chatMessages">
@@ -3881,7 +3881,26 @@ button,
 </div>
 </div>
 <div class="game-panel" id="squishy">
-<iframe class="squishy-frame" src="./butter_squishy_3d_natural.html" title="Squishy 3D Game"></iframe>
+<iframe id="squishyFrame" class="squishy-frame" title="Squishy 3D Game"></iframe>
+<script>
+(function () {
+  const frame = document.getElementById('squishyFrame');
+  if (!frame) return;
+  const src = './butter_squishy_3d_natural.html';
+  try {
+    fetch(src)
+      .then(response => response.ok ? response.text() : Promise.reject(new Error('Not found')))
+      .then(html => {
+        frame.srcdoc = html;
+      })
+      .catch(() => {
+        frame.srcdoc = '<!DOCTYPE html><html><body style="margin:0;background:#fdf3df;font-family:sans-serif;display:flex;align-items:center;justify-content:center;color:#7a5b1f;min-height:100vh;">Squishy game could not be loaded. Please open the file from the app root.</body></html>';
+      });
+  } catch (e) {
+    frame.srcdoc = '<!DOCTYPE html><html><body style="margin:0;background:#fdf3df;font-family:sans-serif;display:flex;align-items:center;justify-content:center;color:#7a5b1f;min-height:100vh;">Unable to initialize squishy game.</body></html>';
+  }
+})();
+</script>
 </div>
 </div>
 
