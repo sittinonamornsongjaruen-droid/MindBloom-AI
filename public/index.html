@@ -5190,7 +5190,7 @@ document.addEventListener('keydown',e=>{
 // ════════════════════════════════
 
 const stressLevels = {
-  green:  { icon:'https://drive.google.com/thumbnail?id=1ouR-YCAt19fe91K19-mCVaEIuAOt_ztY&sz=w1000', label:'ระดับต่ำ',        color:'',        desc:'วันนี้ดูโอเคดีนะครับ 😊 ลองมาชาร์จพลังด้วยเกมเรียงเพชรกันดีกว่า — ฝึกสมาธิไปด้วย ผ่อนคลายไปด้วยเลย 💎' },
+  green:  { icon:'https://drive.google.com/thumbnail?id=1ouR-YCAt19fe91K19-mCVaEIuAOt_ztY&sz=w1000', label:'ระดับต่ำ',        color:'green',        desc:'วันนี้ดูโอเคดีนะครับ 😊 ลองมาชาร์จพลังด้วยเกมเรียงเพชรกันดีกว่า — ฝึกสมาธิไปด้วย ผ่อนคลายไปด้วยเลย 💎' },
   yellow: { icon:'https://drive.google.com/thumbnail?id=1xIjYxwNDpsGYkzJ_SPdft_SG3e8ZqpwZ&sz=w1000', label:'ระดับปานกลาง',   color:'yellow',  desc:'รู้สึกได้เลยว่ากำลังแบกอะไรบางอย่างอยู่นะครับ 💛 มาลองระบายสีด้วยกันไหม? วิจัยบอกว่าช่วยลดความวิตกกังวลได้จริงๆ 🎨' },
   red:    { icon:'https://drive.google.com/thumbnail?id=1C8xok0XZxGk64JptS4BlPN2-kI-WC3pQ&sz=w1000', label:'ระดับสูง',        color:'red',     desc:'ได้ยินที่พูดอยู่นะครับ หนักมากเลย 🌸 ลองออกกำลังกายเบาๆ ด้วยกันก่อนไหม? ขยับร่างกายช่วยปล่อยพลังงานที่อัดแน่นออกมาได้เยอะเลย 🏃' },
   purple: { icon:'https://drive.google.com/thumbnail?id=1hy4z_gGkmpXN5n375bwphmc29otVh9sQ&sz=w1000', label:'ระดับรุนแรง',    color:'purple',  desc:'ตอนนี้หนักมากจริงๆ ครับ รู้สึกได้เลย 💜 มาเล่น ASMR ด้วยกันก่อนนะ เสียงพวกนี้ช่วยให้จิตใจสงบลงได้เร็วมากเลย ✨' }
@@ -5384,7 +5384,7 @@ function buildStressCard(level) {
     const icons = {green:'https://drive.google.com/thumbnail?id=1ouR-YCAt19fe91K19-mCVaEIuAOt_ztY&sz=w1000', yellow:'https://drive.google.com/thumbnail?id=1xIjYxwNDpsGYkzJ_SPdft_SG3e8ZqpwZ&sz=w1000', red:'https://drive.google.com/thumbnail?id=1C8xok0XZxGk64JptS4BlPN2-kI-WC3pQ&sz=w1000', purple:'https://drive.google.com/thumbnail?id=1hy4z_gGkmpXN5n375bwphmc29otVh9sQ&sz=w1000'};
     const labels = {green:'ระดับต่ำ', yellow:'ระดับปานกลาง', red:'ระดับสูง', purple:'ระดับรุนแรง'};
     return `<div class="face-chip ${active}">
-          <span class="face-emoji"><img src="${icons[l]}" alt="${labels[l]}" style="width:1.5rem;height:1.5rem;object-fit:cover;border-radius:50%"></span>
+          <span class="face-emoji"><img src="${icons[l]}" alt="${labels[l]}" style="width:2.5rem;height:2.5rem;object-fit:cover;border-radius:50%"></span>
           <span class="face-label">${labels[l]}</span>
         </div>`;
   }).join('');
