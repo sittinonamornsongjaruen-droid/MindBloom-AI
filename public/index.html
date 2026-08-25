@@ -3896,6 +3896,131 @@ button,
   const resetBtn = document.getElementById('squishyResetBtn');
   if (!holder || !hint || !resetBtn) return;
 
+  const style = document.createElement('style');
+  style.textContent = `
+    #squishy.game-panel {
+      display: none;
+      width: 100%;
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.35s ease;
+    }
+    #squishy.game-panel.active {
+      display: flex;
+      flex-direction: column;
+    }
+    #squishy .squishy-app {
+      width: min(100%, 1120px);
+      max-width: 1120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 18px 14px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    #squishy .squishy-app h1 {
+      margin: 0 0 8px;
+      color: #7a5b1f;
+      font-size: clamp(20px, 2vw, 26px);
+      line-height: 1.2;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      font-family: 'Sriracha', 'Segoe UI', sans-serif;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      text-align: center;
+    }
+    #squishy .squishy-subtitle {
+      margin: 0 0 10px;
+      color: #9d7d4a;
+      font-size: clamp(12px, 1.2vw, 15px);
+      line-height: 1.6;
+      font-family: 'Sriracha', 'Segoe UI', sans-serif;
+      text-align: center;
+      max-width: 620px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      text-wrap: balance;
+    }
+    #squishyCanvasHolder {
+      width: min(92vw, 1000px);
+      height: 58vh;
+      min-height: 290px;
+      max-height: 560px;
+      border-radius: 20px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.14);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+      touch-action: none;
+      position: relative;
+    }
+    #squishyCanvasHolder canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+      border-radius: 20px;
+      background: transparent;
+    }
+    #squishy .squishy-btn {
+      margin-top: 14px;
+      padding: 10px 24px;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #f4b444, #dd8b1d);
+      color: #fff;
+      font-size: 15px;
+      line-height: 1.2;
+      font-weight: 700;
+      box-shadow: 0 8px 18px rgba(212, 139, 28, 0.32);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      font-family: 'Sriracha', 'Segoe UI', sans-serif;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    #squishy .squishy-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(212, 139, 28, 0.4);
+    }
+    #squishy .squishy-btn:active {
+      transform: translateY(1px) scale(0.99);
+    }
+    #squishy .squishy-hint {
+      margin-top: 10px;
+      min-height: 20px;
+      color: #9a7f54;
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+      font-family: 'Sriracha', 'Segoe UI', sans-serif;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    @media (max-width: 540px) {
+      #squishy .squishy-app {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+      #squishyCanvasHolder {
+        width: min(94vw, 1000px);
+        min-height: 260px;
+        height: 52vh;
+      }
+      #squishy .squishy-subtitle,
+      #squishy .squishy-hint,
+      #squishy .squishy-btn {
+        letter-spacing: 0.01em;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   holder.appendChild(canvas);
@@ -3905,16 +4030,20 @@ button,
     h: 0,
     dpr: Math.min(window.devicePixelRatio || 1, 2),
     pointer: { x: 0, y: 0, active: false },
+    targetPress: 0,
     press: 0,
+    wobble: 0,
     rotation: 0,
     spin: 0,
-    lastTime: 0
+    lastTime: 0,
+    drag: 0,
+    idle: 0
   };
 
   const blobs = [
-    { x: -1.6, y: 0.15, radius: 1.18, color: '#f6d56a', soft: 0.35, phase: 0.2 },
-    { x: 0, y: 0.38, radius: 1.0, color: '#c9abff', soft: 0.45, phase: 1.1 },
-    { x: 1.6, y: 0.1, radius: 1.12, color: '#8fe1ae', soft: 0.4, phase: 1.8 }
+    { x: -1.5, y: 0.12, radius: 1.2, soft: 0.33, phase: 0.2, hue: 42 },
+    { x: 0, y: 0.18, radius: 1.08, soft: 0.46, phase: 1.1, hue: 272 },
+    { x: 1.5, y: 0.08, radius: 1.16, soft: 0.38, phase: 1.8, hue: 146 }
   ];
 
   function resize() {
@@ -3944,9 +4073,10 @@ button,
     const p = e.touches ? e.touches[0] : e;
     updatePointer(p.clientX, p.clientY);
     state.pointer.active = true;
+    state.drag = 1;
     canvas.style.cursor = 'grabbing';
     hint.textContent = 'กำลังบีบและหมุน...';
-    e.preventDefault && e.preventDefault();
+    if (e.cancelable) e.preventDefault();
   }
 
   function handleMove(e) {
@@ -3958,9 +4088,10 @@ button,
 
     const dx = state.pointer.x - prevX;
     const dy = state.pointer.y - prevY;
-    if (Math.abs(dx) + Math.abs(dy) > 1) {
-      state.rotation += dx * 0.01;
-      state.spin += dy * 0.012;
+    if (Math.abs(dx) + Math.abs(dy) > 0.5) {
+      state.rotation += dx * 0.012;
+      state.spin += dy * 0.018;
+      state.drag = 1;
     }
 
     if (e.cancelable) e.preventDefault();
@@ -3968,6 +4099,7 @@ button,
 
   function handleUp() {
     state.pointer.active = false;
+    state.drag = 0;
     canvas.style.cursor = 'grab';
     hint.textContent = 'กดค้างที่ของเล่นเพื่อบีบ';
   }
@@ -3985,6 +4117,8 @@ button,
     state.rotation = 0;
     state.spin = 0;
     state.press = 0;
+    state.wobble = 0;
+    state.targetPress = 0;
     state.pointer.active = false;
     hint.textContent = 'รีเซ็ตแล้ว';
     setTimeout(function () {
@@ -3993,25 +4127,28 @@ button,
   });
 
   function drawBlob(x, y, radius, softness, hue, press) {
-    const points = 26;
+    const points = 32;
     ctx.beginPath();
     for (let i = 0; i <= points; i++) {
       const a = (i / points) * Math.PI * 2;
-      const wave = 1 + Math.sin(a * 4 + state.lastTime * 0.003 + softness * 7) * 0.08;
-      const stretch = 1 + Math.sin(a * 2 - state.lastTime * 0.004 + softness * 11) * 0.12;
-      const px = x + Math.cos(a) * radius * wave * stretch * (1 + press * 0.22);
-      const py = y + Math.sin(a) * radius * wave * (1 + press * 0.3);
+      const wave = 1 + Math.sin(a * 4 + state.lastTime * 0.003 + softness * 7) * 0.09;
+      const stretch = 1 + Math.sin(a * 2 - state.lastTime * 0.004 + softness * 11) * 0.16;
+      const px = x + Math.cos(a) * radius * wave * stretch * (1 + press * 0.28);
+      const py = y + Math.sin(a) * radius * wave * (1 + press * 0.32);
       if (i === 0) ctx.moveTo(px, py);
       else ctx.lineTo(px, py);
     }
     ctx.closePath();
-    ctx.fillStyle = `hsla(${hue}, 78%, 72%, 0.92)`;
+    ctx.fillStyle = `hsla(${hue}, 80%, 73%, 0.93)`;
+    ctx.shadowColor = `hsla(${hue}, 80%, 70%, 0.28)`;
+    ctx.shadowBlur = 26;
     ctx.fill();
+    ctx.shadowBlur = 0;
 
     ctx.beginPath();
     ctx.ellipse(
-      x - radius * 0.2,
-      y - radius * 0.15,
+      x - radius * 0.18,
+      y - radius * 0.14,
       radius * 0.28,
       radius * 0.18,
       -0.5,
@@ -4026,45 +4163,50 @@ button,
     const t = now * 0.001;
     state.lastTime = now;
 
-    ctx.clearRect(0, 0, state.w, state.h);
-
     const cx = state.w / 2;
     const cy = state.h / 2;
-
     const centerDist = Math.hypot(state.pointer.x - cx, state.pointer.y - cy);
-    const targetPress = state.pointer.active ? Math.max(0, 1 - centerDist / (state.w * 0.45)) : 0;
-    state.press += (targetPress * 0.95 + (state.pointer.active ? 0.2 : 0) - state.press) * 0.08;
+    const pointerStrength = state.pointer.active ? Math.max(0, 1 - centerDist / (state.w * 0.42)) : 0;
+    state.targetPress = state.pointer.active ? 0.8 + pointerStrength * 0.7 : 0.08;
+    state.press += (state.targetPress - state.press) * 0.08;
+    state.wobble += ((0.5 + Math.sin(t * 1.6)) * 0.18 - state.wobble) * 0.08;
+    state.spin += (state.rotation - state.spin) * 0.08;
+    state.idle += 0.016;
+
+    ctx.clearRect(0, 0, state.w, state.h);
 
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.rotate(state.spin * 0.55 + state.rotation * 0.18);
+    ctx.rotate(state.spin * 0.45 + state.rotation * 0.12);
 
     ctx.beginPath();
-    ctx.ellipse(0, 160, 150, 38, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(122, 92, 64, 0.08)';
+    ctx.ellipse(0, 170, 160, 34, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(124, 96, 68, 0.08)';
     ctx.fill();
 
     blobs.forEach(function (blob, index) {
       const localPress = state.pointer.active &&
-        Math.abs(state.pointer.x - (cx + blob.x * 100)) < 110 &&
-        Math.abs(state.pointer.y - (cy + blob.y * 110)) < 110 ? 1 : 0;
+        Math.abs(state.pointer.x - (cx + blob.x * 107)) < 110 &&
+        Math.abs(state.pointer.y - (cy + blob.y * 95)) < 110 ? 1 : 0;
 
-      const press = Math.min(1.35, state.press * 0.75 + localPress * 0.9 + Math.sin(t * 1.8 + blob.phase) * 0.18 + blob.soft * 0.08);
-      const x = blob.x * 96;
-      const y = blob.y * 82 + Math.sin(t * 1.5 + blob.phase) * 8;
+      const press = Math.min(1.4, state.press * 0.7 + localPress * 0.9 + Math.sin(t * 1.8 + blob.phase) * 0.18 + blob.soft * 0.12);
+      const driftX = Math.sin(t * 1.2 + blob.phase * 4) * 10;
+      const driftY = Math.cos(t * 1.6 + blob.phase * 2.5) * 10 + Math.sin(t * 0.8 + blob.phase) * 6;
+      const x = blob.x * 96 + driftX;
+      const y = blob.y * 80 + driftY;
 
       drawBlob(
         x,
         y,
-        blob.radius * 56 * (1 + press * 0.2),
+        blob.radius * 56 * (1 + press * 0.18),
         blob.soft,
-        index === 0 ? 40 : index === 1 ? 270 : 145,
+        blob.hue,
         press
       );
     });
 
     ctx.beginPath();
-    ctx.ellipse(-42, -32, 96, 34, -0.7, 0, Math.PI * 2);
+    ctx.ellipse(-42, -30, 100, 36, -0.7, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255,255,255,0.14)';
     ctx.fill();
 
