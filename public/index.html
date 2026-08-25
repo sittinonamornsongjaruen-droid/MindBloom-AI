@@ -3882,1294 +3882,324 @@ button,
 </div>
 <div class="game-panel" id="squishy">
   <div class="squishy-app">
-    <h1>Squishy 3D</h1>
-    <p class="squishy-subtitle">กดค้างเพื่อบีบของเล่นแต่ละชิ้น &nbsp;•&nbsp; ลากที่ตัวไหนหมุนเฉพาะตัวนั้น &nbsp;•&nbsp; ลากสไลม์เพื่อดึงยืด</p>
-    <div id="squishyCanvasHolder"></div>
-    <button class="squishy-btn" id="squishyResetBtn"><span>↻</span> รีเซ็ตแว็กซ์</button>
-    <div class="squishy-hint" id="squishyHint">กดค้างที่ของเล่นเพื่อบีบ</div>
+    <h1>Squishy Garden</h1>
+    <p class="squishy-subtitle">เลือกของเล่น แล้วกดค้างเพื่อบีบให้ยุบ เก็บคะแนนความนุ่มให้ครบ</p>
+    <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:14px 0">
+      <button class="squishy-btn" data-squishy-color="#ff9ab2" data-squishy-name="หัวใจชมพู">หัวใจชมพู</button>
+      <button class="squishy-btn" data-squishy-color="#8ed8b1" data-squishy-name="ต้นอ่อนเขียว">ต้นอ่อนเขียว</button>
+      <button class="squishy-btn" data-squishy-color="#ffd66e" data-squishy-name="ดวงดาวเหลือง">ดวงดาวเหลือง</button>
+    </div>
+    <div id="newSquishyStage" style="position:relative;width:100%;max-width:560px;height:330px;border-radius:24px;overflow:hidden;background:linear-gradient(160deg,#fff7ed,#e7f3e6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.8),0 12px 28px rgba(119,102,72,.12);touch-action:none;cursor:grab">
+      <canvas id="newSquishyCanvas" aria-label="เกมบีบสกุชชี่"></canvas>
+    </div>
+    <div style="display:flex;justify-content:center;gap:24px;margin-top:14px;color:var(--text-mid);font-size:.95rem">
+      <span>คะแนน <strong id="newSquishyScore">0</strong></span>
+      <span id="newSquishyStatus">พร้อมบีบ</span>
+    </div>
+    <button class="squishy-btn" id="newSquishyReset"><span>↻</span> เริ่มใหม่</button>
   </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function () {
-  var holder = document.getElementById('squishyCanvasHolder');
-  var hint = document.getElementById('squishyHint');
-  var resetBtn = document.getElementById('squishyResetBtn');
+  const stage = document.getElementById('newSquishyStage');
+  const canvas = document.getElementById('newSquishyCanvas');
+  const scoreElement = document.getElementById('newSquishyScore');
+  const statusElement = document.getElementById('newSquishyStatus');
+  const resetButton = document.getElementById('newSquishyReset');
+  const colorButtons = document.querySelectorAll('[data-squishy-color]');
+  if (!stage || !canvas || !scoreElement || !statusElement || !resetButton) return;
+
+  const context = canvas.getContext('2d');
+  const state = { color: '#ff9ab2', name: 'หัวใจชมพู', score: 0, squeeze: 0, active: false, x: 0, y: 0, width: 0, height: 0 };
+
+  function resize() {
+    const bounds = stage.getBoundingClientRect();
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    state.width = bounds.width;
+    state.height = bounds.height;
+    canvas.width = Math.round(state.width * pixelRatio);
+    canvas.height = Math.round(state.height * pixelRatio);
+    canvas.style.width = state.width + 'px';
+    canvas.style.height = state.height + 'px';
+    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  }
+
+  function updatePointer(event) {
+    const bounds = canvas.getBoundingClientRect();
+    state.x = event.clientX - bounds.left;
+    state.y = event.clientY - bounds.top;
+  }
+
+  function startSqueeze(event) {
+    updatePointer(event);
+    state.active = true;
+    stage.style.cursor = 'grabbing';
+    statusElement.textContent = 'กำลังบีบ ' + state.name;
+    event.preventDefault();
+  }
+
+  function stopSqueeze() {
+    state.active = false;
+    stage.style.cursor = 'grab';
+    statusElement.textContent = 'พร้อมบีบ';
+  }
+
+  function draw(now) {
+    const centerX = state.width / 2;
+    const centerY = state.height / 2 + 8;
+    const breathing = Math.sin(now * 0.002) * 4;
+    const squeeze = state.active ? 0.22 : 0;
+    state.squeeze += (squeeze - state.squeeze) * 0.12;
+    context.clearRect(0, 0, state.width, state.height);
+
+    context.beginPath();
+    context.ellipse(centerX, centerY + 104, 112, 18, 0, 0, Math.PI * 2);
+    context.fillStyle = 'rgba(90, 110, 80, .14)';
+    context.fill();
+
+    context.save();
+    context.translate(centerX, centerY);
+    context.scale(1 + state.squeeze, 1 - state.squeeze * 0.7);
+    context.beginPath();
+    for (let point = 0; point <= 48; point += 1) {
+      const angle = (point / 48) * Math.PI * 2;
+      const wobble = 1 + Math.sin(angle * 5 + now * 0.003) * 0.035;
+      const x = Math.cos(angle) * (92 + breathing) * wobble;
+      const y = Math.sin(angle) * (92 + breathing) * wobble;
+      point === 0 ? context.moveTo(x, y) : context.lineTo(x, y);
+    }
+    context.closePath();
+    context.fillStyle = state.color;
+    context.shadowColor = 'rgba(80, 80, 60, .2)';
+    context.shadowBlur = 18;
+    context.shadowOffsetY = 10;
+    context.fill();
+    context.shadowColor = 'transparent';
+    context.beginPath();
+    context.ellipse(-28, -34, 31, 18, -0.45, 0, Math.PI * 2);
+    context.fillStyle = 'rgba(255,255,255,.45)';
+    context.fill();
+    context.restore();
+    requestAnimationFrame(draw);
+  }
+
+  canvas.addEventListener('pointerdown', startSqueeze);
+  canvas.addEventListener('pointermove', updatePointer);
+  canvas.addEventListener('pointerup', stopSqueeze);
+  canvas.addEventListener('pointercancel', stopSqueeze);
+  colorButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      state.color = button.dataset.squishyColor;
+      state.name = button.dataset.squishyName;
+      statusElement.textContent = 'เลือก ' + state.name;
+    });
+  });
+  resetButton.addEventListener('click', function () {
+    state.score = 0;
+    scoreElement.textContent = '0';
+    statusElement.textContent = 'เริ่มใหม่แล้ว';
+  });
+  setInterval(function () {
+    if (state.active) {
+      state.score += 1;
+      scoreElement.textContent = String(state.score);
+    }
+  }, 120);
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(draw);
+})();
+</script>
+<script>
+(function () {
+  const holder = document.getElementById('squishyCanvasHolder');
+  const hint = document.getElementById('squishyHint');
+  const resetBtn = document.getElementById('squishyResetBtn');
   if (!holder || !hint || !resetBtn) return;
 
-  var style = document.createElement('style');
-  style.textContent = `
-    #squishy.game-panel {
-      display: none;
-      width: 100%;
-      justify-content: center;
-      align-items: center;
-      animation: fadeIn 0.35s ease;
-    }
-    #squishy.game-panel.active {
-      display: flex;
-      flex-direction: column;
-    }
-    #squishy .squishy-app {
-      width: min(100%, 1120px);
-      max-width: 1120px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 12px 18px 14px;
-      box-sizing: border-box;
-      overflow: hidden;
-    }
-    #squishy .squishy-app h1 {
-      margin: 0 0 8px;
-      color: #7a5b1f;
-      font-size: clamp(20px, 2vw, 26px);
-      line-height: 1.2;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      font-family: 'Sriracha', 'Segoe UI', sans-serif;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-      text-align: center;
-    }
-    #squishy .squishy-subtitle {
-      margin: 0 0 10px;
-      color: #9d7d4a;
-      font-size: clamp(12px, 1.2vw, 15px);
-      line-height: 1.6;
-      font-family: 'Sriracha', 'Segoe UI', sans-serif;
-      text-align: center;
-      max-width: 620px;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-      text-wrap: balance;
-    }
-    #squishyCanvasHolder {
-      width: min(92vw, 1000px);
-      height: 58vh;
-      min-height: 290px;
-      max-height: 560px;
-      border-radius: 20px;
-      overflow: hidden;
-      background: rgba(255,255,255,0.14);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
-      touch-action: none;
-      position: relative;
-    }
-    #squishyCanvasHolder canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      cursor: grab;
-      border-radius: 20px;
-      background: transparent;
-    }
-    #squishy .squishy-btn {
-      margin-top: 14px;
-      padding: 10px 24px;
-      border: none;
-      border-radius: 999px;
-      background: linear-gradient(180deg, #f4b444, #dd8b1d);
-      color: #fff;
-      font-size: 15px;
-      line-height: 1.2;
-      font-weight: 700;
-      box-shadow: 0 8px 18px rgba(212, 139, 28, 0.32);
-      cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      font-family: 'Sriracha', 'Segoe UI', sans-serif;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-    #squishy .squishy-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 20px rgba(212, 139, 28, 0.4);
-    }
-    #squishy .squishy-btn:active {
-      transform: translateY(1px) scale(0.99);
-    }
-    #squishy .squishy-hint {
-      margin-top: 10px;
-      min-height: 20px;
-      color: #9a7f54;
-      font-size: 12px;
-      line-height: 1.5;
-      text-align: center;
-      font-family: 'Sriracha', 'Segoe UI', sans-serif;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-    @media (max-width: 540px) {
-      #squishy .squishy-app {
-        padding-left: 12px;
-        padding-right: 12px;
-      }
-      #squishyCanvasHolder {
-        width: min(94vw, 1000px);
-        min-height: 260px;
-        height: 52vh;
-      }
-      #squishy .squishy-subtitle,
-      #squishy .squishy-hint,
-      #squishy .squishy-btn {
-        letter-spacing: 0.01em;
-      }
-    }
-  `;
-  document.head.appendChild(style);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  holder.appendChild(canvas);
 
-  function clipHalfPlane(poly, a, b, c){
-    var result = [];
-    var n = poly.length;
-    for (var i = 0; i < n; i++){
-      var cur = poly[i], prev = poly[(i - 1 + n) % n];
-      var curVal = a * cur[0] + b * cur[1];
-      var prevVal = a * prev[0] + b * prev[1];
-      var curIn = curVal <= c, prevIn = prevVal <= c;
-      if (curIn !== prevIn){
-        var denom = a * (cur[0] - prev[0]) + b * (cur[1] - prev[1]);
-        var t = denom !== 0 ? (c - prevVal) / denom : 0;
-        result.push([prev[0] + t * (cur[0] - prev[0]), prev[1] + t * (cur[1] - prev[1])]);
-      }
-      if (curIn) result.push(cur);
-    }
-    return result;
-  }
+  const state = {
+    w: 0,
+    h: 0,
+    dpr: Math.min(window.devicePixelRatio || 1, 2),
+    pointer: { x: 0, y: 0, active: false },
+    press: 0,
+    rotation: 0,
+    spin: 0,
+    lastTime: 0
+  };
 
-  function voronoiCellPolygon(seeds, i, bounds){
-    var poly = [[bounds[0], bounds[1]], [bounds[2], bounds[1]], [bounds[2], bounds[3]], [bounds[0], bounds[3]]];
-    var pi = seeds[i];
-    for (var j = 0; j < seeds.length; j++){
-      if (j === i) continue;
-      var pj = seeds[j];
-      var a = 2 * (pj[0] - pi[0]);
-      var b = 2 * (pj[1] - pi[1]);
-      var c = (pj[0] * pj[0] + pj[1] * pj[1]) - (pi[0] * pi[0] + pi[1] * pi[1]);
-      poly = clipHalfPlane(poly, a, b, c);
-      if (poly.length === 0) break;
-    }
-    return poly;
-  }
-
-  function ensureAudio(){
-    if (!window.AudioContext && !window.webkitAudioContext) return null;
-    if (!window.__squishyAudioCtx){
-      var Ctx = window.AudioContext || window.webkitAudioContext;
-      window.__squishyAudioCtx = new Ctx();
-    }
-    if (window.__squishyAudioCtx.state === 'suspended') window.__squishyAudioCtx.resume();
-    return window.__squishyAudioCtx;
-  }
-
-  function getNoiseBuffer(){
-    if (!window.__squishyNoiseBuffer){
-      var ctx = ensureAudio();
-      if (!ctx) return null;
-      var len = ctx.sampleRate * 0.5;
-      var buffer = ctx.createBuffer(1, len, ctx.sampleRate);
-      var data = buffer.getChannelData(0);
-      for (var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
-      window.__squishyNoiseBuffer = buffer;
-    }
-    return window.__squishyNoiseBuffer;
-  }
-
-  function playCrack(){
-    var ctx = ensureAudio();
-    if (!ctx) return;
-    var now = ctx.currentTime;
-    var thump = ctx.createOscillator();
-    thump.type = 'triangle';
-    thump.frequency.setValueAtTime(88 + Math.random() * 28, now);
-    thump.frequency.exponentialRampToValueAtTime(26, now + 0.19);
-    var tg = ctx.createGain();
-    tg.gain.setValueAtTime(0.0001, now);
-    tg.gain.linearRampToValueAtTime(0.5 + Math.random() * 0.14, now + 0.01);
-    tg.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
-    thump.connect(tg); tg.connect(ctx.destination);
-    thump.start(now); thump.stop(now + 0.26);
-
-    var thump2 = ctx.createOscillator();
-    thump2.type = 'sine';
-    thump2.frequency.setValueAtTime(52, now + 0.045);
-    thump2.frequency.exponentialRampToValueAtTime(22, now + 0.24);
-    var tg2 = ctx.createGain();
-    tg2.gain.setValueAtTime(0.0001, now + 0.045);
-    tg2.gain.linearRampToValueAtTime(0.22, now + 0.06);
-    tg2.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-    thump2.connect(tg2); tg2.connect(ctx.destination);
-    thump2.start(now + 0.045); thump2.stop(now + 0.32);
-
-    var bodyNoise = ctx.createBufferSource();
-    bodyNoise.buffer = getNoiseBuffer();
-    bodyNoise.playbackRate.value = 0.4 + Math.random() * 0.15;
-    var lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 180 + Math.random() * 100;
-    var bg = ctx.createGain();
-    bg.gain.setValueAtTime(0.0001, now);
-    bg.gain.linearRampToValueAtTime(0.36, now + 0.012);
-    bg.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
-    bodyNoise.connect(lp); lp.connect(bg); bg.connect(ctx.destination);
-    bodyNoise.start(now); bodyNoise.stop(now + 0.26);
-
-    var burstCount = 4 + Math.floor(Math.random() * 4);
-    for (var i = 0; i < burstCount; i++){
-      var t0 = now + i * (0.011 + Math.random() * 0.018);
-      var src = ctx.createBufferSource();
-      src.buffer = getNoiseBuffer();
-      src.playbackRate.value = 1.3 + Math.random() * 1.5;
-      var bp = ctx.createBiquadFilter();
-      bp.type = 'bandpass';
-      bp.frequency.value = 1800 + Math.random() * 4200;
-      bp.Q.value = 2.2 + Math.random() * 2.6;
-      var g = ctx.createGain();
-      var d = 0.013 + Math.random() * 0.02;
-      g.gain.setValueAtTime(0.0001, t0);
-      g.gain.linearRampToValueAtTime(0.24 + Math.random() * 0.2, t0 + 0.002);
-      g.gain.exponentialRampToValueAtTime(0.001, t0 + d);
-      src.connect(bp); bp.connect(g); g.connect(ctx.destination);
-      src.start(t0); src.stop(t0 + d + 0.01);
-    }
-  }
-
-  function playSquishThud(){
-    var ctx = ensureAudio();
-    if (!ctx) return;
-    var now = ctx.currentTime;
-    var osc = ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(85, now);
-    osc.frequency.exponentialRampToValueAtTime(28, now + 0.3);
-    var gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.36, now + 0.03);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(now); osc.stop(now + 0.38);
-
-    var noise = ctx.createBufferSource();
-    noise.buffer = getNoiseBuffer();
-    noise.playbackRate.value = 0.32;
-    var lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 190;
-    var ng = ctx.createGain();
-    ng.gain.setValueAtTime(0.0001, now);
-    ng.gain.linearRampToValueAtTime(0.16, now + 0.05);
-    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
-    noise.connect(lp); lp.connect(ng); ng.connect(ctx.destination);
-    noise.start(now); noise.stop(now + 0.38);
-  }
-
-  function playDumplingSquish(){
-    var ctx = ensureAudio();
-    if (!ctx) return;
-    var now = ctx.currentTime;
-
-    var noise = ctx.createBufferSource();
-    noise.buffer = getNoiseBuffer();
-    noise.playbackRate.value = 0.8;
-    var bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.setValueAtTime(520, now);
-    bp.frequency.exponentialRampToValueAtTime(230, now + 0.24);
-    bp.Q.value = 0.7;
-    var ng = ctx.createGain();
-    ng.gain.setValueAtTime(0.0001, now);
-    ng.gain.linearRampToValueAtTime(0.26, now + 0.07);
-    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
-    noise.connect(bp); bp.connect(ng); ng.connect(ctx.destination);
-    noise.start(now); noise.stop(now + 0.36);
-
-    var osc = ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(215, now);
-    osc.frequency.exponentialRampToValueAtTime(120, now + 0.26);
-    var gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.24, now + 0.032);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(now); osc.stop(now + 0.34);
-
-    var tail = ctx.createOscillator();
-    tail.type = 'sine';
-    tail.frequency.setValueAtTime(300, now + 0.08);
-    tail.frequency.exponentialRampToValueAtTime(180, now + 0.32);
-    var tailGain = ctx.createGain();
-    tailGain.gain.setValueAtTime(0.0001, now + 0.08);
-    tailGain.gain.linearRampToValueAtTime(0.08, now + 0.12);
-    tailGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-    tail.connect(tailGain); tailGain.connect(ctx.destination);
-    tail.start(now + 0.08); tail.stop(now + 0.42);
-  }
-
-  function playDumplingRelease(){
-    var ctx = ensureAudio();
-    if (!ctx) return;
-    var now = ctx.currentTime;
-    var osc = ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(115, now);
-    osc.frequency.linearRampToValueAtTime(210, now + 0.32);
-    var gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.16, now + 0.06);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(now); osc.stop(now + 0.38);
-
-    var noise = ctx.createBufferSource();
-    noise.buffer = getNoiseBuffer();
-    noise.playbackRate.value = 0.9;
-    var bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.setValueAtTime(270, now);
-    bp.frequency.linearRampToValueAtTime(500, now + 0.3);
-    bp.Q.value = 0.6;
-    var ng = ctx.createGain();
-    ng.gain.setValueAtTime(0.0001, now);
-    ng.gain.linearRampToValueAtTime(0.15, now + 0.06);
-    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
-    noise.connect(bp); bp.connect(ng); ng.connect(ctx.destination);
-    noise.start(now); noise.stop(now + 0.34);
-  }
-
-  function playAirPuff(ctx, t, amt, dur){
-    var src = ctx.createBufferSource();
-    src.buffer = getNoiseBuffer();
-    src.playbackRate.value = 0.55 + Math.random() * 0.15;
-    var lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(280 + Math.random() * 80, t);
-    lp.frequency.exponentialRampToValueAtTime(140, t + dur);
-    lp.Q.value = 0.6;
-    var g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(amt, t + dur * 0.35);
-    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    src.connect(lp); lp.connect(g); g.connect(ctx.destination);
-    src.start(t); src.stop(t + dur + 0.01);
-  }
-
-  function playWetSlap(ctx, t, amt){
-    var src = ctx.createBufferSource();
-    src.buffer = getNoiseBuffer();
-    src.playbackRate.value = 2.2 + Math.random() * 0.8;
-    var hp = ctx.createBiquadFilter();
-    hp.type = 'highpass';
-    hp.frequency.value = 1200;
-    var bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = 2600 + Math.random() * 1200;
-    bp.Q.value = 0.9;
-    var g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(amt, t + 0.004);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
-    src.connect(hp); hp.connect(bp); bp.connect(g); g.connect(ctx.destination);
-    src.start(t); src.stop(t + 0.05);
-  }
-
-  function playSlimeGrab(){
-    var ctx = ensureAudio();
-    if (!ctx) return;
-    var now = ctx.currentTime;
-    var noise = ctx.createBufferSource();
-    noise.buffer = getNoiseBuffer();
-    noise.playbackRate.value = 0.62;
-    var bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.setValueAtTime(280, now);
-    bp.frequency.exponentialRampToValueAtTime(440, now + 0.11);
-    bp.Q.value = 1.5;
-    var g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, now);
-    g.gain.linearRampToValueAtTime(0.42, now + 0.025);
-    g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-    noise.connect(bp); bp.connect(g); g.connect(ctx.destination);
-    noise.start(now); noise.stop(now + 0.24);
-
-    playWetSlap(ctx, now, 0.22);
-    playWetSlap(ctx, now + 0.05, 0.1);
-    playAirPuff(ctx, now + 0.02, 0.16, 0.22);
-  }
-
-  function playSlimeTick(){
-    var ctx = ensureAudio();
-    if (!ctx) return;
-    var now = ctx.currentTime;
-    var noise = ctx.createBufferSource();
-    noise.buffer = getNoiseBuffer();
-    noise.playbackRate.value = 0.5 + Math.random() * 0.2;
-    var bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = 260 + Math.random() * 200;
-    bp.Q.value = 1.3 + Math.random() * 0.8;
-    var g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, now);
-    g.gain.linearRampToValueAtTime(0.17 + Math.random() * 0.07, now + 0.018);
-    g.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
-    noise.connect(bp); bp.connect(g); g.connect(ctx.destination);
-    noise.start(now); noise.stop(now + 0.15);
-
-    if (Math.random() < 0.5) playWetSlap(ctx, now, 0.06);
-    if (Math.random() < 0.5){
-      var creak = ctx.createBufferSource();
-      creak.buffer = getNoiseBuffer();
-      creak.playbackRate.value = 2.2 + Math.random() * 1.2;
-      var cf = ctx.createBiquadFilter();
-      cf.type = 'bandpass';
-      cf.frequency.value = 1400 + Math.random() * 900;
-      cf.Q.value = 7;
-      var cg = ctx.createGain();
-      cg.gain.setValueAtTime(0.0001, now);
-      cg.gain.linearRampToValueAtTime(0.025, now + 0.01);
-      cg.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-      creak.connect(cf); cf.connect(cg); cg.connect(ctx.destination);
-      creak.start(now); creak.stop(now + 0.07);
-    }
-  }
-
-  function playSlimeSnap(){
-    var ctx = ensureAudio();
-    if (!ctx) return;
-    var now = ctx.currentTime;
-    var noise = ctx.createBufferSource();
-    noise.buffer = getNoiseBuffer();
-    noise.playbackRate.value = 0.56;
-    var bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.setValueAtTime(320, now);
-    bp.frequency.exponentialRampToValueAtTime(210, now + 0.22);
-    bp.Q.value = 1.4;
-    var g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, now);
-    g.gain.linearRampToValueAtTime(0.44, now + 0.014);
-    g.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
-    noise.connect(bp); bp.connect(g); g.connect(ctx.destination);
-    noise.start(now); noise.stop(now + 0.28);
-
-    playWetSlap(ctx, now, 0.26);
-    playWetSlap(ctx, now + 0.09, 0.13);
-    playWetSlap(ctx, now + 0.2, 0.07);
-    playAirPuff(ctx, now + 0.05, 0.22, 0.34);
-    playAirPuff(ctx, now + 0.22, 0.1, 0.3);
-  }
-
-  function playRelease(){
-    var ctx = ensureAudio();
-    if (!ctx) return;
-    var now = ctx.currentTime;
-    var osc = ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(55, now);
-    osc.frequency.linearRampToValueAtTime(100, now + 0.34);
-    var gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.11, now + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(now); osc.stop(now + 0.4);
-  }
-
-  var scene = new THREE.Scene();
-  var camera = new THREE.PerspectiveCamera(44, holder.clientWidth / holder.clientHeight, 0.1, 100);
-  camera.position.set(0, 0.95, 5.6);
-  camera.lookAt(0, 0, 0);
-
-  var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setClearColor(0x000000, 0);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  holder.appendChild(renderer.domElement);
-
-  function resizeRenderer(){
-    var w = holder.clientWidth, h = holder.clientHeight;
-    if (w < 10 || h < 10) return;
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    renderer.setSize(w, h);
-  }
-  resizeRenderer();
-  window.addEventListener('resize', resizeRenderer);
-  window.addEventListener('orientationchange', resizeRenderer);
-
-  scene.add(new THREE.AmbientLight(0xffffff, 0.68));
-  var dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  dirLight.position.set(2.5, 4, 2.5);
-  dirLight.castShadow = true;
-  dirLight.shadow.mapSize.set(1024, 1024);
-  dirLight.shadow.camera.left = -3;
-  dirLight.shadow.camera.right = 3;
-  dirLight.shadow.camera.top = 3;
-  dirLight.shadow.camera.bottom = -3;
-  scene.add(dirLight);
-  scene.add(new THREE.DirectionalLight(0xfff2d0, 0.25));
-
-  var ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(20, 20),
-    new THREE.ShadowMaterial({ opacity: 0.2 })
-  );
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -0.44;
-  ground.receiveShadow = true;
-  scene.add(ground);
-
-  var sceneGroup = new THREE.Object3D();
-  scene.add(sceneGroup);
-
-  var butterGroup = new THREE.Object3D();
-  butterGroup.position.set(-1.95, 0, 0);
-  sceneGroup.add(butterGroup);
-
-  var baoziGroup = new THREE.Object3D();
-  baoziGroup.position.set(0, 0, 0);
-  sceneGroup.add(baoziGroup);
-
-  var slimeGroup = new THREE.Object3D();
-  slimeGroup.position.set(2.05, 0, 0);
-  sceneGroup.add(slimeGroup);
-
-  var butterMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(2, 0.7, 0.7),
-    new THREE.MeshStandardMaterial({ color: 0xf0c220, roughness: 0.95, metalness: 0 })
-  );
-  butterMesh.castShadow = true;
-  butterGroup.add(butterMesh);
-
-  var faceDefs = [
-    { rot: [0, Math.PI / 2, 0],  center: [1.03, 0, 0],   sizeU: 0.76, sizeV: 0.76, canvasW: 220, canvasH: 220, label: false },
-    { rot: [0, -Math.PI / 2, 0], center: [-1.03, 0, 0],  sizeU: 0.76, sizeV: 0.76, canvasW: 220, canvasH: 220, label: false },
-    { rot: [-Math.PI / 2, 0, 0], center: [0, 0.38, 0],   sizeU: 2.06, sizeV: 0.76, canvasW: 320, canvasH: 120, label: false },
-    { rot: [Math.PI / 2, 0, 0],  center: [0, -0.38, 0],  sizeU: 2.06, sizeV: 0.76, canvasW: 320, canvasH: 120, label: false },
-    { rot: [0, 0, 0],            center: [0, 0, 0.38],   sizeU: 2.06, sizeV: 0.76, canvasW: 320, canvasH: 120, label: true  },
-    { rot: [0, Math.PI, 0],      center: [0, 0, -0.38],  sizeU: 2.06, sizeV: 0.76, canvasW: 320, canvasH: 120, label: false }
+  const blobs = [
+    { x: -1.6, y: 0.15, radius: 1.18, color: '#f6d56a', soft: 0.35, phase: 0.2 },
+    { x: 0, y: 0.38, radius: 1.0, color: '#c9abff', soft: 0.45, phase: 1.1 },
+    { x: 1.6, y: 0.1, radius: 1.12, color: '#8fe1ae', soft: 0.4, phase: 1.8 }
   ];
-  var faceBaseColors = ['#efe8d3', '#efe8d3', '#f6f1e2', '#e6dcbd', '#f4eddb', '#eee5c9'];
-  var wxTints = ['#f6f1e2', '#efe8d3', '#f9f4e8', '#f1ead6', '#e8ddc0', '#eee5c9', '#f3ecd8'];
-  var CREVICE_COLOR = 'rgba(180,172,155,0.4)';
 
-  function paintBase(ctx, w, h, baseColor){
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = baseColor;
-    ctx.fillRect(0, 0, w, h);
-    var speckles = Math.round(w * h / 170);
-    for (var i = 0; i < speckles; i++){
-      var x = Math.random() * w, y = Math.random() * h;
-      ctx.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,0.05)' : 'rgba(120,105,70,0.05)';
-      ctx.beginPath();
-      ctx.arc(x, y, 0.6 + Math.random() * 1.6, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-  function paintLabel(ctx, w, h){
-    var grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, '#fbe37e'); grad.addColorStop(1, '#f0c220');
-    ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
-    var speckles = Math.round(w * h / 260);
-    for (var i = 0; i < speckles; i++){
-      var x = Math.random() * w, y = Math.random() * h;
-      ctx.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,0.04)' : 'rgba(120,105,70,0.04)';
-      ctx.beginPath();
-      ctx.arc(x, y, 0.6 + Math.random() * 1.4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#1c2f6b';
-    ctx.font = '700 14px Arial, sans-serif';
-    ctx.fillText('SALTED', w / 2, h * 0.34);
-    ctx.font = '800 32px Arial, sans-serif';
-    ctx.fillText('BUTTER', w / 2, h * 0.62);
-    ctx.font = '600 10.5px Arial, sans-serif';
-    ctx.fillStyle = '#33417a';
-    ctx.fillText('4 OZ.  NET WT. (113 G)', w / 2, h * 0.82);
+  function resize() {
+    const rect = holder.getBoundingClientRect();
+    state.w = rect.width;
+    state.h = rect.height;
+    canvas.width = Math.round(rect.width * state.dpr);
+    canvas.height = Math.round(rect.height * state.dpr);
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
   }
 
-  function polygonCentroid(poly){
-    var cx = 0, cy = 0;
-    for (var i = 0; i < poly.length; i++){ cx += poly[i][0]; cy += poly[i][1]; }
-    return [cx / poly.length, cy / poly.length];
+  function pointerToCanvas(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    return { x: clientX - rect.left, y: clientY - rect.top };
   }
-  function shrinkPolygon(poly, factor){
-    var c = polygonCentroid(poly);
-    return poly.map(function(p){ return [c[0] + (p[0] - c[0]) * factor, c[1] + (p[1] - c[1]) * factor]; });
+
+  function updatePointer(clientX, clientY) {
+    const point = pointerToCanvas(clientX, clientY);
+    state.pointer.x = point.x;
+    state.pointer.y = point.y;
+    state.pointer.active = true;
   }
-  function fillPolygon(ctx, poly, color){
-    if (poly.length < 3) return;
-    ctx.fillStyle = color;
+
+  function handleDown(e) {
+    const p = e.touches ? e.touches[0] : e;
+    updatePointer(p.clientX, p.clientY);
+    state.pointer.active = true;
+    canvas.style.cursor = 'grabbing';
+    hint.textContent = 'กำลังบีบและหมุน...';
+    e.preventDefault && e.preventDefault();
+  }
+
+  function handleMove(e) {
+    if (!state.pointer.active) return;
+    const p = e.touches ? e.touches[0] : e;
+    const prevX = state.pointer.x;
+    const prevY = state.pointer.y;
+    updatePointer(p.clientX, p.clientY);
+
+    const dx = state.pointer.x - prevX;
+    const dy = state.pointer.y - prevY;
+    if (Math.abs(dx) + Math.abs(dy) > 1) {
+      state.rotation += dx * 0.01;
+      state.spin += dy * 0.012;
+    }
+
+    if (e.cancelable) e.preventDefault();
+  }
+
+  function handleUp() {
+    state.pointer.active = false;
+    canvas.style.cursor = 'grab';
+    hint.textContent = 'กดค้างที่ของเล่นเพื่อบีบ';
+  }
+
+  canvas.addEventListener('pointerdown', handleDown);
+  canvas.addEventListener('pointermove', handleMove);
+  canvas.addEventListener('pointerup', handleUp);
+  canvas.addEventListener('pointerleave', handleUp);
+  canvas.addEventListener('touchstart', handleDown, { passive: false });
+  canvas.addEventListener('touchmove', handleMove, { passive: false });
+  canvas.addEventListener('touchend', handleUp);
+  canvas.addEventListener('touchcancel', handleUp);
+
+  resetBtn.addEventListener('click', function () {
+    state.rotation = 0;
+    state.spin = 0;
+    state.press = 0;
+    state.pointer.active = false;
+    hint.textContent = 'รีเซ็ตแล้ว';
+    setTimeout(function () {
+      hint.textContent = 'กดค้างที่ของเล่นเพื่อบีบ';
+    }, 700);
+  });
+
+  function drawBlob(x, y, radius, softness, hue, press) {
+    const points = 26;
     ctx.beginPath();
-    ctx.moveTo(poly[0][0], poly[0][1]);
-    for (var i = 1; i < poly.length; i++) ctx.lineTo(poly[i][0], poly[i][1]);
+    for (let i = 0; i <= points; i++) {
+      const a = (i / points) * Math.PI * 2;
+      const wave = 1 + Math.sin(a * 4 + state.lastTime * 0.003 + softness * 7) * 0.08;
+      const stretch = 1 + Math.sin(a * 2 - state.lastTime * 0.004 + softness * 11) * 0.12;
+      const px = x + Math.cos(a) * radius * wave * stretch * (1 + press * 0.22);
+      const py = y + Math.sin(a) * radius * wave * (1 + press * 0.3);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
     ctx.closePath();
+    ctx.fillStyle = `hsla(${hue}, 78%, 72%, 0.92)`;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.ellipse(
+      x - radius * 0.2,
+      y - radius * 0.15,
+      radius * 0.28,
+      radius * 0.18,
+      -0.5,
+      0,
+      Math.PI * 2
+    );
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
     ctx.fill();
   }
 
-  var faceCanvases = [], faceTextures = [], facePolys = [], faceRemaining = [], waxMaterials = [], faceGroups = [];
-  var waxShell = null;
+  function render(now) {
+    const t = now * 0.001;
+    state.lastTime = now;
 
-  function initFace(fi){
-    var fd = faceDefs[fi];
-    var canvas = faceCanvases[fi] || document.createElement('canvas');
-    canvas.width = fd.canvasW; canvas.height = fd.canvasH;
-    var cctx = canvas.getContext('2d');
-    if (fd.label) paintLabel(cctx, fd.canvasW, fd.canvasH);
-    else paintBase(cctx, fd.canvasW, fd.canvasH, faceBaseColors[fi]);
+    ctx.clearRect(0, 0, state.w, state.h);
 
-    if (!faceTextures[fi]) faceTextures[fi] = new THREE.CanvasTexture(canvas);
-    else faceTextures[fi].needsUpdate = true;
-    faceCanvases[fi] = canvas;
+    const cx = state.w / 2;
+    const cy = state.h / 2;
 
-    var seedCount = 12 + Math.floor(Math.random() * 5);
-    var pts = [];
-    for (var s = 0; s < seedCount; s++) pts.push([Math.random() * fd.canvasW, Math.random() * fd.canvasH]);
-    var polys = [];
-    var remaining = [];
-    for (var ci = 0; ci < seedCount; ci++){
-      var poly = voronoiCellPolygon(pts, ci, [0, 0, fd.canvasW, fd.canvasH]);
-      polys.push(poly && poly.length >= 3 ? poly : null);
-      if (poly && poly.length >= 3) remaining.push(ci);
-    }
-    facePolys[fi] = polys;
-    faceRemaining[fi] = remaining;
+    const centerDist = Math.hypot(state.pointer.x - cx, state.pointer.y - cy);
+    const targetPress = state.pointer.active ? Math.max(0, 1 - centerDist / (state.w * 0.45)) : 0;
+    state.press += (targetPress * 0.95 + (state.pointer.active ? 0.2 : 0) - state.press) * 0.08;
 
-    if (faceGroups[fi]){
-      var children = faceGroups[fi].children.slice();
-      children.forEach(function(m){
-        faceGroups[fi].remove(m);
-        m.geometry.dispose(); m.material.dispose();
-      });
-    }
-  }
-
-  for (var fi = 0; fi < 6; fi++){
-    var fd = faceDefs[fi];
-    initFace(fi);
-    waxMaterials.push(new THREE.MeshStandardMaterial({
-      map: faceTextures[fi], roughness: 0.92, metalness: 0.0,
-      transparent: true, opacity: 0.64
-    }));
-    var fg = new THREE.Object3D();
-    fg.position.set(fd.center[0], fd.center[1], fd.center[2]);
-    fg.rotation.set(fd.rot[0], fd.rot[1], fd.rot[2]);
-    butterGroup.add(fg);
-    faceGroups.push(fg);
-  }
-  waxShell = new THREE.Mesh(new THREE.BoxGeometry(2.06, 0.76, 0.76, 18, 8, 8), waxMaterials);
-  butterGroup.add(waxShell);
-  waxShell.geometry.computeVertexNormals();
-  var butterDent = {
-    basePos: new Float32Array(waxShell.geometry.attributes.position.array),
-    baseNormal: new Float32Array(waxShell.geometry.attributes.normal.array),
-    pokeLocal: new THREE.Vector3(0, 0, 0), hasPoke: false, amount: 0
-  };
-
-  function popCell(faceIndex){
-    var remaining = faceRemaining[faceIndex];
-    if (!remaining.length) return false;
-    var cellIndex = remaining.pop();
-    var poly = facePolys[faceIndex][cellIndex];
-    var fd = faceDefs[faceIndex];
-
-    var shrunkCanvas = shrinkPolygon(poly, 0.84);
-    var ctx = faceCanvases[faceIndex].getContext('2d');
     ctx.save();
-    ctx.globalAlpha = 0.4;
-    fillPolygon(ctx, poly, CREVICE_COLOR);
-    ctx.restore();
-    var tint = wxTints[Math.floor(Math.random() * wxTints.length)];
-    ctx.save();
-    ctx.globalAlpha = 0.35;
-    fillPolygon(ctx, shrunkCanvas, tint);
-    ctx.restore();
-    faceTextures[faceIndex].needsUpdate = true;
+    ctx.translate(cx, cy);
+    ctx.rotate(state.spin * 0.55 + state.rotation * 0.18);
 
-    var localShrunk = shrunkCanvas.map(function(p){
-      return [ (p[0] / fd.canvasW - 0.5) * fd.sizeU, (p[1] / fd.canvasH - 0.5) * fd.sizeV ];
-    });
-    var shape = new THREE.Shape();
-    shape.moveTo(localShrunk[0][0], localShrunk[0][1]);
-    for (var i = 1; i < localShrunk.length; i++) shape.lineTo(localShrunk[i][0], localShrunk[i][1]);
-    shape.closePath();
-    var depth = 0.014;
-    var geo = new THREE.ExtrudeGeometry(shape, { depth: depth, bevelEnabled: false });
-    var mat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(tint), roughness: 0.9, metalness: 0,
-      transparent: true, opacity: 0.32
-    });
-    var mesh = new THREE.Mesh(geo, mat);
-    mesh.position.z = 0.006 + Math.random() * 0.008;
-    faceGroups[faceIndex].add(mesh);
-    return true;
-  }
-  function triggerCrack(){
-    for (var attempt = 0; attempt < 6; attempt++){
-      var faceIndex = Math.floor(Math.random() * 6);
-      if (popCell(faceIndex)){ playCrack(); return true; }
-    }
-    return false;
-  }
-  function resetWax(){
-    for (var fi2 = 0; fi2 < 6; fi2++) initFace(fi2);
-  }
-  resetBtn.addEventListener('click', resetWax);
-
-  var baoziRadius = 0.56;
-  var baoziGeo = new THREE.SphereGeometry(baoziRadius, 48, 32);
-  (function displaceCreases(){
-    var posAttr = baoziGeo.attributes.position;
-    var creaseCount = 7;
-    for (var i = 0; i < posAttr.count; i++){
-      var x = posAttr.getX(i), y = posAttr.getY(i), z = posAttr.getZ(i);
-      var r = Math.sqrt(x * x + y * y + z * z) || 0.0001;
-      var phi = Math.atan2(z, x);
-      var topWeight = Math.max(0, y / r);
-      topWeight = Math.pow(topWeight, 1.6);
-      var crease = Math.cos(phi * creaseCount);
-      var scaleAmt = 1 + crease * 0.055 * topWeight;
-      posAttr.setXYZ(i, x * scaleAmt, y * scaleAmt, z * scaleAmt);
-    }
-    posAttr.needsUpdate = true;
-    baoziGeo.computeVertexNormals();
-  })();
-  baoziGeo.scale(1, 0.82, 1);
-  baoziGeo.computeVertexNormals();
-  var baoziDent = {
-    basePos: new Float32Array(baoziGeo.attributes.position.array),
-    baseNormal: new Float32Array(baoziGeo.attributes.normal.array),
-    pokeLocal: new THREE.Vector3(0, 0, 0), hasPoke: false, amount: 0
-  };
-
-  function makeBaoziTexture(){
-    var w = 512, h = 256;
-    var canvas = document.createElement('canvas');
-    canvas.width = w; canvas.height = h;
-    var ctx = canvas.getContext('2d');
-    var purple = '#b78fe0';
-    ctx.fillStyle = purple;
-    ctx.fillRect(0, 0, w, h);
-    for (var i = 0; i < 900; i++){
-      var x = Math.random() * w, y = Math.random() * h;
-      ctx.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,0.05)' : 'rgba(70,40,110,0.05)';
-      ctx.beginPath(); ctx.arc(x, y, 0.6 + Math.random() * 1.4, 0, Math.PI * 2); ctx.fill();
-    }
-    var creaseCount = 7;
-    for (var k = 0; k < creaseCount; k++){
-      var px = (k / creaseCount) * w;
-      var grad = ctx.createLinearGradient(px, 0, px, h * 0.46);
-      grad.addColorStop(0, 'rgba(70,45,110,0.55)');
-      grad.addColorStop(1, 'rgba(70,45,110,0)');
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(px, 0);
-      ctx.quadraticCurveTo(px + (Math.random() - 0.5) * 10, h * 0.22, px, h * 0.46);
-      ctx.stroke();
-    }
-    var fx = 0.25 * w, fy = 0.60 * h;
-    var eyeDX = 34, eyeY = fy;
-    [-1, 1].forEach(function(side){
-      var ex = fx + side * eyeDX;
-      ctx.save();
-      ctx.translate(ex, eyeY);
-      ctx.rotate(side * 0.12);
-      ctx.fillStyle = '#171018';
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 13, 21, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.92)';
-      ctx.beginPath();
-      ctx.ellipse(-4, -7, 3.4, 4.2, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      ctx.strokeStyle = 'rgba(214,60,70,0.75)';
-      ctx.lineWidth = 3;
-      ctx.lineCap = 'round';
-      for (var b = 0; b < 3; b++){
-        var bx = ex + side * (14 + b * 7);
-        var by = eyeY + 24;
-        ctx.beginPath();
-        ctx.moveTo(bx, by);
-        ctx.lineTo(bx + side * 5, by + 8);
-        ctx.stroke();
-      }
-    });
-    ctx.strokeStyle = '#171018';
-    ctx.lineWidth = 3.4;
-    ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.arc(fx, fy + 8, 11, Math.PI * 0.18, Math.PI * 0.82);
-    ctx.stroke();
+    ctx.ellipse(0, 160, 150, 38, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(122, 92, 64, 0.08)';
+    ctx.fill();
 
-    return new THREE.CanvasTexture(canvas);
-  }
+    blobs.forEach(function (blob, index) {
+      const localPress = state.pointer.active &&
+        Math.abs(state.pointer.x - (cx + blob.x * 100)) < 110 &&
+        Math.abs(state.pointer.y - (cy + blob.y * 110)) < 110 ? 1 : 0;
 
-  var baoziMesh = new THREE.Mesh(
-    baoziGeo,
-    new THREE.MeshStandardMaterial({ map: makeBaoziTexture(), roughness: 0.9, metalness: 0 })
-  );
-  baoziMesh.castShadow = true;
-  baoziGroup.add(baoziMesh);
+      const press = Math.min(1.35, state.press * 0.75 + localPress * 0.9 + Math.sin(t * 1.8 + blob.phase) * 0.18 + blob.soft * 0.08);
+      const x = blob.x * 96;
+      const y = blob.y * 82 + Math.sin(t * 1.5 + blob.phase) * 8;
 
-  function makeGlitterTexture(){
-    var w = 256, h = 256;
-    var canvas = document.createElement('canvas');
-    canvas.width = w; canvas.height = h;
-    var ctx = canvas.getContext('2d');
-    var grad = ctx.createRadialGradient(w * 0.4, h * 0.35, 10, w * 0.5, h * 0.5, w * 0.75);
-    grad.addColorStop(0, '#4fb868');
-    grad.addColorStop(1, '#1f8a3c');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
-    for (var s = 0; s < 14; s++){
-      ctx.strokeStyle = 'rgba(255,255,255,' + (0.03 + Math.random() * 0.05) + ')';
-      ctx.lineWidth = 2 + Math.random() * 4;
-      ctx.beginPath();
-      var sx = Math.random() * w, sy = Math.random() * h;
-      ctx.moveTo(sx, sy);
-      ctx.quadraticCurveTo(sx + (Math.random() - 0.5) * 80, sy + (Math.random() - 0.5) * 80, sx + (Math.random() - 0.5) * 140, sy + (Math.random() - 0.5) * 140);
-      ctx.stroke();
-    }
-    var flakeColors = ['#ffe27a', '#fff6c4', '#b6ffcf', '#ffffff', '#8bffb0'];
-    for (var i = 0; i < 260; i++){
-      var x = Math.random() * w, y = Math.random() * h;
-      var col = flakeColors[Math.floor(Math.random() * flakeColors.length)];
-      ctx.fillStyle = col;
-      if (Math.random() < 0.35){
-        var r2 = 2 + Math.random() * 2.5;
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(Math.random() * Math.PI);
-        ctx.beginPath();
-        ctx.moveTo(0, -r2); ctx.lineTo(r2 * 0.28, -r2 * 0.28);
-        ctx.lineTo(r2, 0); ctx.lineTo(r2 * 0.28, r2 * 0.28);
-        ctx.lineTo(0, r2); ctx.lineTo(-r2 * 0.28, r2 * 0.28);
-        ctx.lineTo(-r2, 0); ctx.lineTo(-r2 * 0.28, -r2 * 0.28);
-        ctx.closePath(); ctx.fill();
-        ctx.restore();
-      } else {
-        ctx.beginPath();
-        ctx.arc(x, y, 0.8 + Math.random() * 1.6, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    var tex = new THREE.CanvasTexture(canvas);
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    return tex;
-  }
-  var glitterTexture = makeGlitterTexture();
-  var GlitterMaterialCtor = THREE.MeshPhysicalMaterial || THREE.MeshStandardMaterial;
-  function makeSlimeMaterial(){
-    return new GlitterMaterialCtor({
-      map: glitterTexture, roughness: 0.16, metalness: 0.02,
-      clearcoat: 0.9, clearcoatRoughness: 0.08,
-      transparent: true, opacity: 0.82
+      drawBlob(
+        x,
+        y,
+        blob.radius * 56 * (1 + press * 0.2),
+        blob.soft,
+        index === 0 ? 40 : index === 1 ? 270 : 145,
+        press
+      );
     });
+
+    ctx.beginPath();
+    ctx.ellipse(-42, -32, 96, 34, -0.7, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.14)';
+    ctx.fill();
+
+    ctx.restore();
+
+    requestAnimationFrame(render);
   }
 
-  function roundedRectShape(w, h, r){
-    var shape = new THREE.Shape();
-    var x = -w / 2, y = -h / 2;
-    shape.moveTo(x + r, y);
-    shape.lineTo(x + w - r, y);
-    shape.quadraticCurveTo(x + w, y, x + w, y + r);
-    shape.lineTo(x + w, y + h - r);
-    shape.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    shape.lineTo(x + r, y + h);
-    shape.quadraticCurveTo(x, y + h, x, y + h - r);
-    shape.lineTo(x, y + r);
-    shape.quadraticCurveTo(x, y, x + r, y);
-    return shape;
-  }
-  var steelMaterial = new THREE.MeshStandardMaterial({ color: 0xeef0f2, roughness: 0.18, metalness: 0.92 });
-
-  var trayW = 1.9, trayD = 1.5, trayCorner = 0.22, rimW = 0.1;
-  var trayBaseShape = roundedRectShape(trayW, trayD, trayCorner);
-  var trayBaseGeo = new THREE.ExtrudeGeometry(trayBaseShape, { depth: 0.05, bevelEnabled: false });
-  trayBaseGeo.rotateX(-Math.PI / 2);
-  var trayBase = new THREE.Mesh(trayBaseGeo, steelMaterial);
-  trayBase.position.y = -0.46;
-  trayBase.receiveShadow = true;
-  slimeGroup.add(trayBase);
-
-  var rimOuter = roundedRectShape(trayW, trayD, trayCorner);
-  var rimInner = roundedRectShape(trayW - rimW * 2, trayD - rimW * 2, Math.max(0.02, trayCorner - rimW));
-  rimOuter.holes.push(rimInner);
-  var rimGeo = new THREE.ExtrudeGeometry(rimOuter, { depth: 0.1, bevelEnabled: true, bevelSize: 0.018, bevelThickness: 0.018, bevelSegments: 4 });
-  rimGeo.rotateX(-Math.PI / 2);
-  var trayRim = new THREE.Mesh(rimGeo, steelMaterial);
-  trayRim.position.y = -0.41;
-  trayRim.castShadow = true;
-  trayRim.receiveShadow = true;
-  slimeGroup.add(trayRim);
-
-  var puddleGeo = new THREE.SphereGeometry(0.6, 32, 22);
-  var lumpSeeds = [];
-  for (var ls = 0; ls < 5; ls++){
-    lumpSeeds.push({ a: Math.random() * Math.PI * 2, b: Math.random() * Math.PI * 2, amp: 0.02 + Math.random() * 0.025, freq: 2 + Math.floor(Math.random() * 3) });
-  }
-  (function lumpify(){
-    var pa = puddleGeo.attributes.position;
-    for (var i = 0; i < pa.count; i++){
-      var x = pa.getX(i), y = pa.getY(i), z = pa.getZ(i);
-      var phi = Math.atan2(z, x), theta = Math.acos(Math.max(-1, Math.min(1, y / (Math.sqrt(x * x + y * y + z * z) || 1))));
-      var n = 1;
-      for (var l = 0; l < lumpSeeds.length; l++){
-        var s = lumpSeeds[l];
-        n += s.amp * Math.sin(phi * s.freq + s.a) * Math.cos(theta * 2 + s.b);
-      }
-      n += (Math.random() - 0.5) * 0.008;
-      pa.setXYZ(i, x * n, y * n, z * n);
-    }
-    pa.needsUpdate = true;
-    puddleGeo.computeVertexNormals();
-  })();
-  puddleGeo.scale(1.58, 0.16, 1.22);
-  var puddleMesh = new THREE.Mesh(puddleGeo, makeSlimeMaterial());
-  puddleMesh.position.y = -0.29;
-  puddleMesh.castShadow = true;
-  slimeGroup.add(puddleMesh);
-  var puddleBasePos = new Float32Array(puddleGeo.attributes.position.array);
-  var slimePokeLocal = new THREE.Vector3(0, 1, 0);
-  var slimeHasPoke = false;
-  var slimeDentAmount = 0;
-  var lastRippleTime = -10;
-
-  function updateDent(state, geometry, maxDepth, sigma){
-    var pos = geometry.attributes.position;
-    var use = state.hasPoke && state.amount > 0.002;
-    for (var i = 0; i < pos.count; i++){
-      var bx = state.basePos[i * 3], by = state.basePos[i * 3 + 1], bz = state.basePos[i * 3 + 2];
-      var vx = bx, vy = by, vz = bz;
-      if (use){
-        var dx = bx - state.pokeLocal.x, dy = by - state.pokeLocal.y, dz = bz - state.pokeLocal.z;
-        var d2 = dx * dx + dy * dy + dz * dz;
-        var falloff = Math.exp(-d2 / (2 * sigma * sigma));
-        vy -= state.amount * maxDepth * falloff;
-      }
-      pos.setXYZ(i, vx, vy, vz);
-    }
-    pos.needsUpdate = true;
-    geometry.computeVertexNormals();
-  }
-
-  function morphPuddle(t){
-    var pos = puddleMesh.geometry.attributes.position;
-    var usePoke = slimeHasPoke && slimeDentAmount > 0.002;
-    var pullLen = slimePull.length();
-    var useTent = slimeHasPoke && pullLen > 0.02;
-    var sinceRipple = t - lastRippleTime;
-    var useRipple = sinceRipple < 1.4;
-    for (var i = 0; i < pos.count; i++){
-      var bx = puddleBasePos[i * 3], by = puddleBasePos[i * 3 + 1], bz = puddleBasePos[i * 3 + 2];
-      var wob = 1 + 0.028 * Math.sin(t * 0.6 + bx * 3.2 + by * 1.7) + 0.02 * Math.sin(t * 1.05 + bz * 3.6 - bx * 1.3);
-      var vx = bx * wob, vy = by * wob, vz = bz * wob;
-      if (usePoke || useTent || useRipple){
-        var dx = vx - slimePokeLocal.x, dz = vz - slimePokeLocal.z, dy = vy - slimePokeLocal.y;
-        var d2 = dx * dx + dz * dz + dy * dy * 0.25;
-        if (usePoke){
-          var falloffDent = Math.exp(-d2 / (2 * 0.22 * 0.22));
-          vy -= slimeDentAmount * 0.078 * falloffDent;
-        }
-        if (useTent){
-          var falloffTent = Math.exp(-d2 / (2 * 0.24 * 0.24));
-          vy += Math.min(0.16, pullLen * 0.35) * falloffTent;
-        }
-        if (useRipple){
-          var dist = Math.sqrt(dx * dx + dz * dz);
-          var ripple = Math.sin(dist * 9 - sinceRipple * 11) * Math.exp(-sinceRipple * 3.2) * Math.exp(-dist * 1.4);
-          vy += ripple * 0.03;
-        }
-      }
-      pos.setXYZ(i, vx, vy, vz);
-    }
-    pos.needsUpdate = true;
-    puddleMesh.geometry.computeVertexNormals();
-    glitterTexture.offset.x = Math.sin(t * 0.11) * 0.03;
-    glitterTexture.offset.y = Math.cos(t * 0.08) * 0.02;
-  }
-
-  var slimeAnchorY = -0.19;
-  var slimeStrand = new THREE.Mesh(new THREE.BufferGeometry(), makeSlimeMaterial());
-  slimeStrand.visible = false;
-  slimeGroup.add(slimeStrand);
-
-  var slimePull = new THREE.Vector3(0, 0, 0);
-  var slimePullVel = new THREE.Vector3(0, 0, 0);
-  var slimeIsPulling = false;
-  var slimeMode = null;
-  var slimeDownScreen = { x: 0, y: 0 };
-  var lastSlimeTick = 0;
-
-  function buildTaperedTube(curve, tubularSeg, radialSeg, radiusFn, wobble){
-    var positions = [], normals = [], indices = [];
-    var frames = [];
-    var up = new THREE.Vector3(0, 1, 0);
-    for (var i = 0; i <= tubularSeg; i++){
-      var t = i / tubularSeg;
-      var point = curve.getPoint(t);
-      var tangent = curve.getTangent(t).normalize();
-      var right = new THREE.Vector3().crossVectors(up, tangent);
-      if (right.lengthSq() < 1e-6) right.set(1, 0, 0);
-      right.normalize();
-      var trueUp = new THREE.Vector3().crossVectors(tangent, right).normalize();
-      up = trueUp;
-      frames.push({ point: point, right: right, up: trueUp });
-    }
-    var ringVerts = radialSeg + 1;
-    for (var i2 = 0; i2 <= tubularSeg; i2++){
-      var t2 = i2 / tubularSeg;
-      var r = radiusFn(t2);
-      var f = frames[i2];
-      var wob = wobble ? Math.sin(t2 * Math.PI) * wobble : 0;
-      for (var j = 0; j <= radialSeg; j++){
-        var theta = (j / radialSeg) * Math.PI * 2;
-        var nx = Math.cos(theta) * f.right.x + Math.sin(theta) * f.up.x;
-        var ny = Math.cos(theta) * f.right.y + Math.sin(theta) * f.up.y;
-        var nz = Math.cos(theta) * f.right.z + Math.sin(theta) * f.up.z;
-        positions.push(f.point.x + nx * r + f.right.x * wob, f.point.y + ny * r + f.right.y * wob, f.point.z + nz * r + f.right.z * wob);
-        normals.push(nx, ny, nz);
-      }
-    }
-    for (var i3 = 0; i3 < tubularSeg; i3++){
-      for (var j2 = 0; j2 < radialSeg; j2++){
-        var a = i3 * ringVerts + j2, b = a + 1, c = a + ringVerts, d = c + 1;
-        indices.push(a, c, b, b, c, d);
-      }
-    }
-    var tipCenterIdx = positions.length / 3;
-    var tipFrame = frames[tubularSeg];
-    var tipCenter = tipFrame.point;
-    positions.push(tipCenter.x, tipCenter.y, tipCenter.z);
-    var tipTangent = curve.getTangent(1).normalize();
-    normals.push(tipTangent.x, tipTangent.y, tipTangent.z);
-    var lastRingStart = tubularSeg * ringVerts;
-    for (var j3 = 0; j3 < radialSeg; j3++){
-      indices.push(lastRingStart + j3, lastRingStart + j3 + 1, tipCenterIdx);
-    }
-    var geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-    geo.setIndex(indices);
-    return geo;
-  }
-
-  function updateSlimeVisual(t){
-    var len = slimePull.length();
-    if (len < 0.02){
-      slimeStrand.visible = false;
-      return;
-    }
-    slimeStrand.visible = true;
-
-    var anchor = new THREE.Vector3(0, slimeAnchorY, 0);
-    var tip = anchor.clone().add(slimePull);
-    var sag = Math.min(0.45, len * len * 0.09);
-    var mid = anchor.clone().add(tip).multiplyScalar(0.5);
-    mid.y -= sag;
-    var curve = new THREE.QuadraticBezierCurve3(anchor, mid, tip);
-    var baseR = Math.max(0.075, Math.min(0.24, 0.26 / (1 + len * 1.05)));
-    function radiusFn(u){
-      var neck = 0.5 + 0.5 * Math.pow(Math.abs(2 * u - 1), 1.6);
-      var tipTaper = 1 - 0.35 * Math.max(0, (u - 0.82) / 0.18);
-      return baseR * neck * tipTaper;
-    }
-    var jiggle = slimeIsPulling ? Math.sin(t * 14) * 0.012 : 0;
-    var newGeo = buildTaperedTube(curve, 18, 10, radiusFn, jiggle);
-    slimeStrand.geometry.dispose();
-    slimeStrand.geometry = newGeo;
-  }
-
-  function makeSquishState(){ return { pos: 0, vel: 0, target: 0 }; }
-  var squishButter = makeSquishState();
-  var squishBaozi = makeSquishState();
-  var squishSlime = makeSquishState();
-  var lastCrackDecile = -1;
-  var CRACK_STEPS = 10;
-
-  function stepSquish(state, isPressed, dt, sp, dp, sr, dr){
-    var stiffness = isPressed ? (sp !== undefined ? sp : 62) : (sr !== undefined ? sr : 24);
-    var damping = isPressed ? (dp !== undefined ? dp : 13) : (dr !== undefined ? dr : 6.2);
-    var force = (state.target - state.pos) * stiffness - state.vel * damping;
-    state.vel += force * dt;
-    state.pos += state.vel * dt;
-    return Math.max(-0.12, Math.min(1.25, state.pos));
-  }
-
-  var raycaster = new THREE.Raycaster();
-  var canvasEl = renderer.domElement;
-  canvasEl.style.cursor = 'grab';
-
-  var isDown = false, isDragging = false, lastX = 0, lastY = 0, downX = 0, downY = 0;
-  var pressedTarget = null;
-
-  function getPoint(e){
-    if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    return { x: e.clientX, y: e.clientY };
-  }
-  function pickTarget(clientX, clientY){
-    var rect = canvasEl.getBoundingClientRect();
-    var ndc = new THREE.Vector2(
-      ((clientX - rect.left) / rect.width) * 2 - 1,
-      -((clientY - rect.top) / rect.height) * 2 + 1
-    );
-    raycaster.setFromCamera(ndc, camera);
-    var hits = raycaster.intersectObjects([waxShell, baoziMesh, puddleMesh, trayBase, trayRim], false);
-    if (!hits.length) return null;
-    var hit = hits[0];
-    var type = hit.object === baoziMesh ? 'baozi'
-      : hit.object === puddleMesh ? 'slime'
-      : (hit.object === trayBase || hit.object === trayRim) ? 'slimeTray'
-      : 'butter';
-    return { type: type, point: hit.point };
-  }
-
-  function onDown(e){
-    isDown = true; isDragging = false;
-    var p = getPoint(e);
-    lastX = p.x; lastY = p.y; downX = p.x; downY = p.y;
-    canvasEl.style.cursor = 'grabbing';
-
-    var picked = pickTarget(p.x, p.y);
-    pressedTarget = picked ? picked.type : null;
-    if (pressedTarget === 'butter'){
-      squishButter.target = 1;
-      lastCrackDecile = -1;
-      butterDent.pokeLocal.copy(waxShell.worldToLocal(picked.point.clone()));
-      butterDent.hasPoke = true;
-      playSquishThud();
-    } else if (pressedTarget === 'baozi'){
-      squishBaozi.target = 1;
-      baoziDent.pokeLocal.copy(baoziMesh.worldToLocal(picked.point.clone()));
-      baoziDent.hasPoke = true;
-      playDumplingSquish();
-    } else if (pressedTarget === 'slime'){
-      slimeMode = 'squish';
-      squishSlime.target = 1;
-      slimeDownScreen.x = p.x; slimeDownScreen.y = p.y;
-      slimePokeLocal.copy(puddleMesh.worldToLocal(picked.point.clone()));
-      slimeHasPoke = true;
-      lastRippleTime = performance.now() * 0.001;
-      playSlimeGrab();
-      lastSlimeTick = performance.now();
-    }
-  }
-  function onMove(e){
-    if (!isDown) return;
-    var p = getPoint(e);
-    var dx = p.x - lastX, dy = p.y - lastY;
-    if (Math.abs(p.x - downX) + Math.abs(p.y - downY) > 6) isDragging = true;
-    if (isDragging && (pressedTarget === 'butter' || pressedTarget === 'baozi' || pressedTarget === 'slimeTray')){
-      var targetGroup = pressedTarget === 'butter' ? butterGroup : (pressedTarget === 'baozi' ? baoziGroup : slimeGroup);
-      targetGroup.rotation.y += dx * 0.009;
-      targetGroup.rotation.x = Math.max(-0.5, Math.min(0.5, targetGroup.rotation.x + dy * 0.009));
-      if (e.cancelable) e.preventDefault();
-    } else if (pressedTarget === 'slime'){
-      var totalDX = p.x - slimeDownScreen.x, totalDY = p.y - slimeDownScreen.y;
-      var dragDist = Math.sqrt(totalDX * totalDX + totalDY * totalDY);
-      var PULL_THRESHOLD = 26;
-      if (dragDist > PULL_THRESHOLD){
-        if (slimeMode !== 'pull'){
-          slimeMode = 'pull';
-          slimeIsPulling = true;
-          squishSlime.target = 0;
-        }
-        var camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-        var camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
-        var excess = dragDist - PULL_THRESHOLD;
-        var dirX = totalDX / dragDist, dirY = totalDY / dragDist;
-        var dragScale = 0.0078;
-        var offset = camRight.multiplyScalar(dirX * excess * dragScale).add(camUp.multiplyScalar(-dirY * excess * dragScale));
-        var maxStretch = 2.2;
-        if (offset.length() > maxStretch) offset.setLength(maxStretch);
-        slimePull.copy(offset);
-        var nowT = performance.now();
-        if (offset.length() > 0.18 && nowT - lastSlimeTick > 170){
-          playSlimeTick();
-          lastSlimeTick = nowT;
-        }
-      }
-      if (e.cancelable) e.preventDefault();
-    }
-    lastX = p.x; lastY = p.y;
-  }
-  function onUp(){
-    if (pressedTarget === 'butter') playRelease();
-    else if (pressedTarget === 'baozi') playDumplingRelease();
-    else if (pressedTarget === 'slime' && slimeMode === 'pull' && slimePull.length() > 0.05) playSlimeSnap();
-    isDown = false; isDragging = false;
-    squishButter.target = 0;
-    squishBaozi.target = 0;
-    squishSlime.target = 0;
-    slimeIsPulling = false;
-    slimeMode = null;
-    pressedTarget = null;
-    canvasEl.style.cursor = 'grab';
-  }
-
-  canvasEl.addEventListener('mousedown', onDown);
-  window.addEventListener('mousemove', onMove);
-  window.addEventListener('mouseup', onUp);
-  canvasEl.addEventListener('touchstart', onDown, { passive: true });
-  canvasEl.addEventListener('touchmove', onMove, { passive: false });
-  canvasEl.addEventListener('touchend', onUp);
-  canvasEl.addEventListener('touchcancel', onUp);
-
-  var lastT = performance.now();
-  function animate(now){
-    requestAnimationFrame(animate);
-    var dt = Math.min(0.05, (now - lastT) / 1000);
-    lastT = now;
-
-    var spB = stepSquish(squishButter, pressedTarget === 'butter', dt);
-    butterGroup.scale.y = 1 - spB * 0.34;
-    var xzB = 1 + spB * 0.17;
-    butterGroup.scale.x = xzB; butterGroup.scale.z = xzB;
-    butterGroup.position.y = -spB * 0.08;
-
-    var spZ = stepSquish(squishBaozi, pressedTarget === 'baozi', dt);
-    baoziDent.amount += (Math.max(0, Math.min(1, spZ)) - baoziDent.amount) * Math.min(1, dt * 10);
-    updateDent(baoziDent, baoziGeo, 0.19, 0.3);
-
-    if (pressedTarget === 'butter'){
-      var clamped01 = Math.max(0, Math.min(1, squishButter.pos));
-      var decile = Math.floor(clamped01 * CRACK_STEPS);
-      if (decile > lastCrackDecile){
-        for (var d = lastCrackDecile + 1; d <= decile; d++) triggerCrack();
-        lastCrackDecile = decile;
-      }
-    }
-
-    var spS = stepSquish(squishSlime, slimeMode === 'squish', dt, 34, 10, 9, 4.4);
-    var dentTarget = Math.max(0, Math.min(1, spS));
-    slimeDentAmount += (dentTarget - slimeDentAmount) * Math.min(1, dt * 10);
-
-    if (!slimeIsPulling && slimePull.lengthSq() > 0.0001){
-      var k = 16, damp = 9;
-      var force = slimePull.clone().multiplyScalar(-k).addScaledVector(slimePullVel, -damp);
-      slimePullVel.addScaledVector(force, dt);
-      slimePull.addScaledVector(slimePullVel, dt);
-      if (slimePull.length() < 0.015){
-        slimePull.set(0, 0, 0);
-        slimePullVel.set(0, 0, 0);
-      }
-    }
-    morphPuddle(now * 0.001);
-    updateSlimeVisual(now * 0.001);
-
-    renderer.render(scene, camera);
-  }
-  requestAnimationFrame(animate);
+  resize();
+  requestAnimationFrame(render);
+  window.addEventListener('resize', resize);
 })();
 </script>
+</div>
 
 
 </div>
