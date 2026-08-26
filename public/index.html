@@ -1949,6 +1949,21 @@
             align-items: center;
         }
 
+        .squishy-game-panel {
+          height: 100%;
+          min-height: 500px;
+        }
+
+        .squishy-game-frame {
+          width: 100%;
+          height: 100%;
+          min-height: 500px;
+          border: 0;
+          border-radius: 20px;
+          background: #fdf3df;
+          display: block;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
@@ -3261,6 +3276,16 @@ button,
     justify-content: center;
   }
 
+  #asmrPage .squishy-game-panel,
+  #asmrPage .squishy-game-frame {
+    min-height: 0;
+    height: 100%;
+  }
+
+  #asmrPage .squishy-game-frame {
+    border-radius: 12px;
+  }
+
   .popit-wrapper {
     width: auto;
     max-width: 100%;
@@ -3799,6 +3824,9 @@ button,
 <button class="menu-btn" onclick="switchGame('xylophone')">
 <span class="asmr-menu-icon">♪</span> <span class="menu-label-full">Xylophone (27 Keys)</span><span class="menu-label-short">Music</span>
         </button>
+<button class="menu-btn" onclick="switchGame('squishy')">
+<span class="asmr-menu-icon">🧈</span> <span class="menu-label-full">Squishy 3D</span><span class="menu-label-short">Squishy</span>
+  </button>
 </div>
 <div class="game-container" id="mainPlayArea">
 <div class="game-panel active" id="popit">
@@ -3864,6 +3892,9 @@ button,
 <div class="xylophone-row naturals" id="xyNaturals"></div>
 </div>
 </div>
+</div>
+<div class="game-panel squishy-game-panel" id="squishy">
+<iframe class="squishy-game-frame" src="butter_squishy_3d_natural.html" title="เกม Squishy 3D" allow="autoplay"></iframe>
 </div>
 </div>
 </div>
