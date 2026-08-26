@@ -7,6 +7,7 @@
 <title>MindBloom AI · ในวันที่โลกใจร้าย ให้ที่นี่เป็นแสงสว่างของคุณ</title>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Sriracha&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/ml5@1.0.1/dist/ml5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 /* Font stack */
   /* Handwritten font stack: Sriracha for Thai, Caveat for English */
@@ -3882,8 +3883,17 @@ button,
 </div>
 <div class="game-panel" id="squishy">
   <div class="squishy-app">
-    <iframe class="squishy-frame" src="butter_squishy_3d_natural.html" title="Butter Squishy 3D" loading="eager" allow="autoplay" onerror="this.nextElementSibling.hidden=false"></iframe>
-    <p hidden style="color:var(--text-mid);text-align:center;margin:14px 0">โหลดเกมไม่สำเร็จ กรุณาตรวจสอบว่าไฟล์ butter_squishy_3d_natural.html อยู่โฟลเดอร์เดียวกับไฟล์งาน</p>
+    <div id="newSquishyStage" style="width:min(92vw,860px);height:min(58vh,520px);min-height:320px;touch-action:none;cursor:grab;background:#fdf3df;border-radius:22px;box-shadow:0 12px 30px rgba(119,102,72,.08);overflow:hidden">
+      <canvas id="newSquishyCanvas" style="display:block;width:100%;height:100%"></canvas>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:12px">
+      <button type="button" id="newSquishyReset" class="btn" style="margin-top:0;padding:10px 24px"><span>&#8635;</span> รีเซ็ตของเล่น</button>
+      <button type="button" data-squishy-color="#ff9ab2" data-squishy-name="หัวใจชมพู" class="btn" style="margin-top:0;padding:8px 14px;background:#ff9ab2">ชมพู</button>
+      <button type="button" data-squishy-color="#f6d56a" data-squishy-name="ดาวเหลือง" class="btn" style="margin-top:0;padding:8px 14px;background:#d9ae32">เหลือง</button>
+      <button type="button" data-squishy-color="#8fe1ae" data-squishy-name="ใบไม้เขียว" class="btn" style="margin-top:0;padding:8px 14px;background:#5caf7a">เขียว</button>
+    </div>
+    <p id="newSquishyStatus" style="color:var(--text-mid);text-align:center;margin:10px 0 0">พร้อมบีบ</p>
+    <span id="newSquishyScore" hidden>0</span>
   </div>
 </div>
 <script>
