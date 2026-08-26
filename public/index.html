@@ -3895,13 +3895,66 @@ button,
     <p id="newSquishyStatus" style="color:var(--text-mid);text-align:center;margin:10px 0 0">พร้อมบีบ</p>
     <span id="newSquishyScore" hidden>0</span>
   </div>
-  <iframe
-    title="Butter Squishy 3D"
-    src="butter-squishy.html"
-    style="display:block;width:min(92vw,1100px);height:min(78vh,680px);min-height:520px;border:0;margin:0 auto;background:#fdf3df;border-radius:22px;overflow:hidden"
-    allow="autoplay"
-  ></iframe>
+  <div id="butterSquishyInlineStage" style="width:min(92vw,1100px);height:min(78vh,680px);min-height:520px;margin:0 auto;background:#fdf3df;border-radius:22px;overflow:hidden;touch-action:none;cursor:grab"></div>
+  <p id="butterSquishyInlineHint" style="color:var(--text-mid);text-align:center;margin:10px 0 0">กดค้างเพื่อบีบของเล่นแต่ละชิ้น • ลากที่ตัวไหนหมุนเฉพาะตัวนั้น • ลากสไลม์เพื่อดึงยืด</p>
 </div>
+<script>
+(function () {
+  const stage = document.getElementById('butterSquishyInlineStage');
+  const hint = document.getElementById('butterSquishyInlineHint');
+  if (!stage || !window.THREE) return;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+  camera.position.set(0, 1.05, 6.3);
+  camera.lookAt(0, 0, 0);
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0, 0);
+  renderer.shadowMap.enabled = true;
+  stage.appendChild(renderer.domElement);
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xc7a66a, 1.25));
+  const light = new THREE.DirectionalLight(0xffffff, 1.1);
+  light.position.set(3, 5, 4); light.castShadow = true; scene.add(light);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 8), new THREE.ShadowMaterial({ opacity: .18 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.y = -.58; floor.receiveShadow = true; scene.add(floor);
+
+  const toys = [];
+  function toyGroup(x) { const group = new THREE.Group(); group.position.x = x; scene.add(group); toys.push(group); return group; }
+  const butter = toyGroup(-1.85);
+  const butterMesh = new THREE.Mesh(new THREE.BoxGeometry(1.9, .72, .78, 8, 4, 4), new THREE.MeshStandardMaterial({ color: 0xf0c220, roughness: .82 }));
+  butterMesh.castShadow = true; butter.add(butterMesh);
+  const label = new THREE.Mesh(new THREE.PlaneGeometry(1.35, .42), new THREE.MeshBasicMaterial({ color: 0xfbe37e }));
+  label.position.z = .401; butter.add(label);
+
+  const baozi = toyGroup(0);
+  const baoziMesh = new THREE.Mesh(new THREE.SphereGeometry(.66, 32, 24), new THREE.MeshStandardMaterial({ color: 0xb78fe0, roughness: .88 }));
+  baoziMesh.scale.y = .82; baoziMesh.castShadow = true; baozi.add(baoziMesh);
+  for (let i = 0; i < 7; i++) {
+    const crease = new THREE.Mesh(new THREE.TorusGeometry(.42, .018, 6, 24, Math.PI), new THREE.MeshStandardMaterial({ color: 0x8d68b5, roughness: 1 }));
+    crease.rotation.x = Math.PI / 2; crease.rotation.z = i * Math.PI / 7; crease.position.y = .35; baozi.add(crease);
+  }
+
+  const slime = toyGroup(1.9);
+  const tray = new THREE.Mesh(new THREE.BoxGeometry(1.9, .12, 1.48, 4, 1, 4), new THREE.MeshStandardMaterial({ color: 0xeef0f2, metalness: .8, roughness: .2 }));
+  tray.position.y = -.5; tray.castShadow = true; tray.receiveShadow = true; slime.add(tray);
+  const slimeMesh = new THREE.Mesh(new THREE.SphereGeometry(.72, 32, 20), new THREE.MeshPhysicalMaterial({ color: 0x38a957, roughness: .25, clearcoat: .8, transparent: true, opacity: .9 }));
+  slimeMesh.scale.set(1.35, .27, 1.05); slimeMesh.position.y = -.2; slimeMesh.castShadow = true; slime.add(slimeMesh);
+
+  let active = null, downX = 0, downY = 0, dragging = false, slimePull = new THREE.Vector3();
+  const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
+  function resize() { const w = stage.clientWidth, h = stage.clientHeight; if (w < 2 || h < 2) return; camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.setSize(w, h, false); }
+  function pick(event) { const rect = renderer.domElement.getBoundingClientRect(); pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1); raycaster.setFromCamera(pointer, camera); const hit = raycaster.intersectObjects([butterMesh, baoziMesh, slimeMesh, tray], false)[0]; return hit ? (hit.object === butterMesh ? butter : hit.object === baoziMesh ? baozi : slime) : null; }
+  function down(event) { active = pick(event); if (!active) return; downX = event.clientX; downY = event.clientY; dragging = false; active.userData.squeeze = 1; hint.textContent = active === slime ? 'กำลังดึงสไลม์...' : 'กำลังบีบของเล่น...'; renderer.domElement.setPointerCapture(event.pointerId); event.preventDefault(); }
+  function move(event) { if (!active) return; const dx = event.clientX - downX, dy = event.clientY - downY; if (Math.abs(dx) + Math.abs(dy) > 6) dragging = true; if (dragging && active !== slime) { active.rotation.y += dx * .008; active.rotation.x = Math.max(-.45, Math.min(.45, active.rotation.x + dy * .006)); downX = event.clientX; downY = event.clientY; } else if (active === slime && dragging) { slimePull.set(dx * .009, -dy * .006, 0); } event.preventDefault(); }
+  function up() { if (!active) return; active.userData.squeeze = 0; active = null; dragging = false; hint.textContent = 'กดค้างเพื่อบีบของเล่นแต่ละชิ้น • ลากที่ตัวไหนหมุนเฉพาะตัวนั้น • ลากสไลม์เพื่อดึงยืด'; }
+  renderer.domElement.addEventListener('pointerdown', down); renderer.domElement.addEventListener('pointermove', move); renderer.domElement.addEventListener('pointerup', up); renderer.domElement.addEventListener('pointercancel', up);
+  window.addEventListener('resize', resize);
+  function animate(time) { requestAnimationFrame(animate); resize(); toys.forEach(function (toy, index) { const squeeze = toy.userData.squeeze || 0; toy.scale.y += (1 - squeeze * .25 - toy.scale.y) * .12; toy.scale.x += (1 + squeeze * .12 - toy.scale.x) * .12; toy.scale.z = toy.scale.x; if (!active || active !== slime) slimePull.multiplyScalar(.94); if (toy === slime) { slime.position.x += (slimePull.x * .015); slime.position.y += (slimePull.y * .015); slime.position.x += (1.9 - slime.position.x) * .015; } else if (!active) toy.position.y = Math.sin(time * .0015 + index) * .025; }); renderer.render(scene, camera); }
+  requestAnimationFrame(animate);
+})();
+</script>
 <script>
 (function () {
   const stage = document.getElementById('newSquishyStage');
