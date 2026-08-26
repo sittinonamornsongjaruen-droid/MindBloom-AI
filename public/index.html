@@ -5001,10 +5001,10 @@ function buildStressCard(level) {
   const targetPage = pageMap[level];
   const chips = ['green','yellow','red','purple'].map(l => {
     const active = level === l ? `active-${l}` : 'inactive';
-    const icons = {green:'https://drive.google.com/uc?export=view&id=1ouR-YCAt19fe91K19-mCVaEIuAOt_ztY', yellow:'https://drive.google.com/uc?export=view&id=1xIjYxwNDpsGYkzJ_SPdft_SG3e8ZqpwZ', red:'https://drive.google.com/uc?export=view&id=1C8xok0XZxGk64JptS4BlPN2-kI-WC3pQ', purple:'https://drive.google.com/uc?export=view&id=1hy4z_gGkmpXN5n375bwphmc29otVh9sQ'};
+    const icons = {green:'https://drive.google.com/thumbnail?id=1ouR-YCAt19fe91K19-mCVaEIuAOt_ztY&sz=w1000', yellow:'https://drive.google.com/thumbnail?id=1xIjYxwNDpsGYkzJ_SPdft_SG3e8ZqpwZ&sz=w1000', red:'https://drive.google.com/thumbnail?id=1C8xok0XZxGk64JptS4BlPN2-kI-WC3pQ&sz=w1000', purple:'https://drive.google.com/thumbnail?id=1hy4z_gGkmpXN5n375bwphmc29otVh9sQ&sz=w1000'};
     const labels = {green:'ระดับต่ำ', yellow:'ระดับปานกลาง', red:'ระดับสูง', purple:'ระดับรุนแรง'};
     return `<div class="face-chip ${active}">
-          <span class="face-emoji"><img src="${icons[l]}" alt="${labels[l]}" style="width:1.5rem;height:1.5rem;object-fit:cover;border-radius:50%"></span>
+          <span class="face-emoji"><img src="${icons[l]}" alt="${labels[l]}" style="width:2.5rem;height:2.5rem;object-fit:cover;border-radius:50%"></span>
           <span class="face-label">${labels[l]}</span>
         </div>`;
   }).join('');
