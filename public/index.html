@@ -4313,12 +4313,16 @@ button,
       camera.position.set(0, 0.95, 5.6);
       camera.lookAt(0, 0, 0);
 
+      if (holder.querySelector('canvas')) {
+        holder.innerHTML = '';
+      }
       var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.setClearColor(0x000000, 0);
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       holder.appendChild(renderer.domElement);
+      window.__squishyRenderer = renderer;
 
       function resizeRenderer(){
         var w = holder.clientWidth || holder.getBoundingClientRect().width || 700;
