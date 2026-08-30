@@ -1950,6 +1950,7 @@
         }
 
         .squishy-game-panel {
+          width: 100%;
           height: 100%;
           min-height: 500px;
         }
@@ -3890,6 +3891,7 @@ button,
 <div class="xylophone-row-wrapper">
 <div class="xylophone-row accidentals" id="xyAccidentals"></div>
 <div class="xylophone-row naturals" id="xyNaturals"></div>
+</div>
 </div>
 </div>
 </div>
@@ -7410,6 +7412,57 @@ function initPaintGame() {
 // ════════════════════════════════
 //  ASMR GAME
 // ════════════════════════════════
+function ensureSquishyPanelPlacement() {
+  const mainPlayArea = document.getElementById('mainPlayArea');
+  const squishy = document.getElementById('squishy');
+  if (!mainPlayArea || !squishy) return;
+
+  if (squishy.parentElement !== mainPlayArea) {
+    mainPlayArea.appendChild(squishy);
+  }
+
+  squishy.style.display = 'flex';
+  squishy.style.width = '100%';
+  squishy.style.height = '100%';
+  squishy.style.minHeight = '500px';
+
+  const holder = document.getElementById('canvasHolder');
+  if (holder) {
+    holder.style.width = '92vw';
+    holder.style.height = '58vh';
+    holder.style.maxWidth = '1100px';
+    holder.style.maxHeight = '560px';
+    holder.style.display = 'block';
+  }
+}
+
+function switchGame(gameId) {
+  ensureSquishyPanelPlacement();
+
+  document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.game-panel').forEach(panel => panel.classList.remove('active'));
+
+  const activeBtn = Array.from(document.querySelectorAll('.menu-btn')).find(btn => btn.getAttribute('onclick')?.includes(`'${gameId}'`));
+  if (activeBtn) activeBtn.classList.add('active');
+
+  const targetPanel = document.getElementById(gameId);
+  if (targetPanel) {
+    targetPanel.classList.add('active');
+    targetPanel.style.display = 'flex';
+  }
+
+  if (gameId === 'squishy') {
+    setTimeout(ensureSquishyPanelPlacement, 0);
+    setTimeout(ensureSquishyPanelPlacement, 60);
+    if (typeof window.refreshSquishyRenderer === 'function') {
+      setTimeout(window.refreshSquishyRenderer, 0);
+      setTimeout(window.refreshSquishyRenderer, 150);
+    }
+  }
+}
+
+window.switchGame = switchGame;
+
 let asmrAudioCtx = null;
 let asmrIsDragging = false;
 let asmrLastEl = null;
@@ -10290,17 +10343,47 @@ window.__gameInits["asmrPage"] = function() {
         }
 
         // --- ระบบสลับหน้าจอเกม ---
+        function ensureSquishyPanelPlacement() {
+            const mainPlayArea = document.getElementById('mainPlayArea');
+            const squishy = document.getElementById('squishy');
+            if (!mainPlayArea || !squishy) return;
+            if (squishy.parentElement !== mainPlayArea) {
+                mainPlayArea.appendChild(squishy);
+            }
+            squishy.style.display = 'flex';
+            squishy.style.width = '100%';
+            squishy.style.height = '100%';
+            squishy.style.minHeight = '500px';
+            const holder = document.getElementById('canvasHolder');
+            if (holder) {
+                holder.style.width = '92vw';
+                holder.style.height = '58vh';
+                holder.style.maxWidth = '1100px';
+                holder.style.maxHeight = '560px';
+                holder.style.display = 'block';
+            }
+        }
+
         function switchGame(gameId) {
+            ensureSquishyPanelPlacement();
             document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.game-panel').forEach(panel => panel.classList.remove('active'));
             
             const activeBtn = Array.from(document.querySelectorAll('.menu-btn')).find(btn => btn.getAttribute('onclick')?.includes(`'${gameId}'`));
             if(activeBtn) activeBtn.classList.add('active');
-            document.getElementById(gameId).classList.add('active');
+            const targetPanel = document.getElementById(gameId);
+            if (targetPanel) {
+                targetPanel.classList.add('active');
+                targetPanel.style.display = 'flex';
+            }
 
-            if (gameId === 'squishy' && typeof window.refreshSquishyRenderer === 'function') {
-                setTimeout(window.refreshSquishyRenderer, 0);
-                setTimeout(window.refreshSquishyRenderer, 120);
+            if (gameId === 'squishy') {
+                setTimeout(ensureSquishyPanelPlacement, 0);
+                setTimeout(ensureSquishyPanelPlacement, 60);
+                if (typeof window.refreshSquishyRenderer === 'function') {
+                    setTimeout(window.refreshSquishyRenderer, 0);
+                    setTimeout(window.refreshSquishyRenderer, 150);
+                }
             }
             
             if (audioCtx.state === 'suspended') {
