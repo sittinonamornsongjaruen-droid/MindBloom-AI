@@ -4319,15 +4319,27 @@ button,
       holder.appendChild(renderer.domElement);
 
       function resizeRenderer(){
-        var w = holder.clientWidth, h = holder.clientHeight;
+        var w = holder.clientWidth || holder.getBoundingClientRect().width || 700;
+        var h = holder.clientHeight || holder.getBoundingClientRect().height || 420;
         if (w < 10 || h < 10) return;
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
         renderer.setSize(w, h);
+        if (renderer.domElement) {
+          renderer.domElement.style.width = '100%';
+          renderer.domElement.style.height = '100%';
+        }
       }
+      window.refreshSquishyRenderer = resizeRenderer;
       resizeRenderer();
       window.addEventListener('resize', resizeRenderer);
       window.addEventListener('orientationchange', resizeRenderer);
+      const squishyObserver = new MutationObserver(function(){
+        if (document.getElementById('squishy') && document.getElementById('squishy').classList.contains('active')) {
+          resizeRenderer();
+        }
+      });
+      squishyObserver.observe(document.getElementById('squishy'), { attributes: true, attributeFilter: ['class'] });
 
       scene.add(new THREE.AmbientLight(0xffffff, 0.68));
       var dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -10285,6 +10297,11 @@ window.__gameInits["asmrPage"] = function() {
             const activeBtn = Array.from(document.querySelectorAll('.menu-btn')).find(btn => btn.getAttribute('onclick')?.includes(`'${gameId}'`));
             if(activeBtn) activeBtn.classList.add('active');
             document.getElementById(gameId).classList.add('active');
+
+            if (gameId === 'squishy' && typeof window.refreshSquishyRenderer === 'function') {
+                setTimeout(window.refreshSquishyRenderer, 0);
+                setTimeout(window.refreshSquishyRenderer, 120);
+            }
             
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
