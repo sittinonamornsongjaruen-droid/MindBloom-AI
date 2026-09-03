@@ -95,10 +95,8 @@
   .mood-row { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
   .mood-tube { flex:1; min-width:140px; max-width:220px; display:flex; flex-direction:column; align-items:center; gap:12px; }
   .mood-tube-label { font-size:.86rem; color:var(--text-mid); font-weight:600; text-align:center; }
-  .mood-tube-scale { position:relative; width:100%; height:260px; border-radius:28px; overflow:hidden; background:linear-gradient(180deg,#f6f9f4,#f4f0ec); border:1px solid rgba(154,176,142,.35); display:flex; align-items:flex-end; justify-content:center; }
-  .mood-tube-fill { width:100%; position:absolute; bottom:0; left:0; border-radius:28px; transition:height .45s ease; }
-  .mood-tube-fill.stress { background:linear-gradient(180deg, #e96d6d 0%, #FF9500 33%, #f6d85c 66%, #7fd57b 100%); }
-  .mood-tube-fill.time { background:linear-gradient(180deg,#a8d8f0,#f6d0a2,#f08d8d); }
+  .mood-tube-scale { position:relative; width:100%; height:260px; border-radius:28px; overflow:hidden; background:linear-gradient(180deg,#f6f9f4,#f4f0ec); border:1px solid rgba(154,176,142,.35); display:flex; align-items:center; justify-content:center; }
+  .mood-tube-image { width:100%; height:100%; display:block; object-fit:cover; border-radius:28px; }
   .mood-tube-value { font-size:1rem; font-weight:700; color:var(--text-dark); text-align:center; }
   .mood-history { width:100%; background:rgba(255,255,255,.92); border:1px solid rgba(200,216,192,.65); border-radius:20px; padding:16px; display:flex; flex-direction:column; gap:12px; }
   .mood-history h3 { font-size:1rem; margin:0; color:var(--text-mid); }
@@ -3760,7 +3758,7 @@ button,
       <div class="mood-tube">
         <div class="mood-tube-label">ตอนนี้ (Now)</div>
         <div class="mood-tube-scale">
-          <div id="moodNowFill" class="mood-tube-fill stress" style="height:20%"></div>
+          <img id="moodNowImage" class="mood-tube-image" src="https://drive.google.com/file/d/1alcgliZMjrKusyLjLBeQH4pWekBG3k42/view?usp=sharing" alt="ระดับความเครียดตอนนี้" onerror="this.onerror=null;this.src='https://drive.google.com/thumbnail?id=1alcgliZMjrKusyLjLBeQH4pWekBG3k42&amp;sz=w1000';" />
         </div>
         <div class="mood-tube-value" id="moodNowValue">ระดับต่ำ</div>
         <div class="mood-tube-value" style="font-size:.82rem;color:var(--text-mid);" id="moodNowTime">--:--</div>
@@ -3768,7 +3766,7 @@ button,
       <div class="mood-tube">
         <div class="mood-tube-label">ก่อนหน้า (Previous)</div>
         <div class="mood-tube-scale">
-          <div id="moodPrevFill" class="mood-tube-fill stress" style="height:8%"></div>
+          <img id="moodPrevImage" class="mood-tube-image" src="https://drive.google.com/file/d/1alcgliZMjrKusyLjLBeQH4pWekBG3k42/view?usp=sharing" alt="ระดับความเครียดก่อนหน้า" onerror="this.onerror=null;this.src='https://drive.google.com/thumbnail?id=1alcgliZMjrKusyLjLBeQH4pWekBG3k42&amp;sz=w1000';" />
         </div>
         <div class="mood-tube-value" id="moodPrevValue">ไม่มีข้อมูล</div>
         <div class="mood-tube-value" style="font-size:.82rem;color:var(--text-mid);" id="moodPrevTime">--:--</div>
@@ -6260,20 +6258,46 @@ function renderMoodTracker() {
     red: 'ระดับสูง',
     purple: 'ระดับรุนแรง'
   };
-  const levelPercents = { green: 20, yellow: 52, red: 78, purple: 98 };
+  const moodImages = {
+    green: 'https://drive.google.com/file/d/1alcgliZMjrKusyLjLBeQH4pWekBG3k42/view?usp=sharing',
+    yellow: 'https://drive.google.com/file/d/19uC5tXRTu5nsc6STHpBlqZLzEbaWXsr4/view?usp=sharing',
+    red: 'https://drive.google.com/file/d/1fHKiny4b6z_61PFEnMkhjyVrcVOde45k/view?usp=sharing',
+    purple: 'https://drive.google.com/file/d/1u-S8BcY4AiIQ4s0h8K1zVuvVppELZu7J/view?usp=sharing'
+  };
+  const moodImageFallbacks = {
+    green: 'https://drive.google.com/thumbnail?id=1alcgliZMjrKusyLjLBeQH4pWekBG3k42&sz=w1000',
+    yellow: 'https://drive.google.com/thumbnail?id=19uC5tXRTu5nsc6STHpBlqZLzEbaWXsr4&sz=w1000',
+    red: 'https://drive.google.com/thumbnail?id=1fHKiny4b6z_61PFEnMkhjyVrcVOde45k&sz=w1000',
+    purple: 'https://drive.google.com/thumbnail?id=1u-S8BcY4AiIQ4s0h8K1zVuvVppELZu7J&sz=w1000'
+  };
 
-  // Now tube
-  document.getElementById('moodNowFill').style.height = `${levelPercents[nowLevel]}%`;
+  // Now image
+  const nowImage = document.getElementById('moodNowImage');
+  nowImage.src = moodImages[nowLevel];
+  nowImage.onerror = () => {
+    nowImage.onerror = null;
+    nowImage.src = moodImageFallbacks[nowLevel];
+  };
   document.getElementById('moodNowValue').textContent = stressLabels[nowLevel];
   document.getElementById('moodNowTime').textContent = new Date().toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
 
-  // Previous tube (if any)
+  // Previous image (if any)
   if (prevLevel) {
-    document.getElementById('moodPrevFill').style.height = `${levelPercents[prevLevel]}%`;
+    const prevImage = document.getElementById('moodPrevImage');
+    prevImage.src = moodImages[prevLevel];
+    prevImage.onerror = () => {
+      prevImage.onerror = null;
+      prevImage.src = moodImageFallbacks[prevLevel];
+    };
     document.getElementById('moodPrevValue').textContent = stressLabels[prevLevel];
     document.getElementById('moodPrevTime').textContent = prevTimeText;
   } else {
-    document.getElementById('moodPrevFill').style.height = `8%`;
+    const prevImage = document.getElementById('moodPrevImage');
+    prevImage.src = moodImages.green;
+    prevImage.onerror = () => {
+      prevImage.onerror = null;
+      prevImage.src = moodImageFallbacks.green;
+    };
     document.getElementById('moodPrevValue').textContent = 'ยังไม่มีข้อมูล';
     document.getElementById('moodPrevTime').textContent = '--:--';
   }
