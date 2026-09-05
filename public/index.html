@@ -371,9 +371,6 @@
   @keyframes gachaReveal { from{opacity:0;transform:scale(.85) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
   .gacha-result-text { font-size:1.05rem; color:var(--text-dark); line-height:1.7; }
   .gacha-result-emoji { font-size:1.6rem; margin-bottom:8px; }
-  .gacha-voice-btn { margin-top:14px; padding:9px 14px; border:1px solid rgba(184,168,207,.5); border-radius:12px; background:rgba(221,213,232,.35); color:var(--text-mid); font-family:'Sriracha','Caveat',cursive; font-size:.86rem; cursor:pointer; transition:all .2s; }
-  .gacha-voice-btn:hover { background:rgba(221,213,232,.7); transform:translateY(-1px); }
-  .gacha-voice-btn:disabled { cursor:wait; opacity:.7; }
   .gacha-btn-row { display:flex; gap:10px; margin-top:14px; }
   .gacha-again-btn { flex:1; padding:11px; border:none; border-radius:12px; font-family:'Sriracha','Caveat',cursive; font-size:.9rem; font-weight:600; cursor:pointer; transition:all .2s; background:linear-gradient(135deg,rgba(221,213,232,.6),rgba(200,180,230,.5)); color:var(--text-mid); border:1.5px solid rgba(184,168,207,.4); }
   .gacha-again-btn:hover { background:linear-gradient(135deg,rgba(221,213,232,.9),rgba(200,180,230,.8)); transform:translateY(-2px); }
@@ -6776,30 +6773,18 @@ function playGachaSuccess() {
   } catch(e) { console.warn('gacha play err', e); }
 }
 
-function playGachaVoice(src, button) {
+function playGachaVoice(src) {
   const audio = document.getElementById('gachaVoice');
   if (!audio || !src) return;
 
   audio.pause();
   audio.currentTime = 0;
   audio.src = src;
-  button.disabled = true;
-  button.textContent = '🔊 กำลังเล่น...';
-
+  audio.volume = 1;
   const playPromise = audio.play();
   if (playPromise && typeof playPromise.catch === 'function') {
-    playPromise.then(() => {
-      button.disabled = false;
-      button.textContent = '🔊 เล่นเสียงอีกครั้ง';
-    }).catch(() => {
-      button.disabled = false;
-      button.textContent = '▶️ แตะเพื่อฟังเสียง';
-    });
+    playPromise.catch((error) => console.warn('gacha voice play err', error));
   }
-  audio.onended = () => {
-    button.disabled = false;
-    button.textContent = '🔊 เล่นเสียงอีกครั้ง';
-  };
 }
 
 document.addEventListener('click', _loadGachaSound, {once: true});
@@ -6814,6 +6799,11 @@ function doGachaSpin() {
   const capsule = document.getElementById('gachaCapsule');
   const result  = document.getElementById('gachaResultCard');
   const btn     = document.getElementById('gachaSpinBtn');
+  const idx     = _gPick();
+  const msg     = GACHA_MSGS[idx];
+
+  // Start voice playback directly from the user's click to avoid autoplay blocking.
+  playGachaVoice(msg.voiceSrc);
 
   // shake machine
   machine.style.animation='none';
@@ -6828,8 +6818,6 @@ function doGachaSpin() {
   ballOut.style.display='none';
 
   setTimeout(()=>{
-    const idx = _gPick();
-    const msg = GACHA_MSGS[idx];
     const emoji = _capsuleEmojis[Math.floor(Math.random()*_capsuleEmojis.length)];
 
     // show capsule
@@ -6847,11 +6835,8 @@ function doGachaSpin() {
         <div class="gacha-card">
           <div style="font-size:2rem;margin-bottom:8px">${msg.emoji}</div>
           <div class="gacha-card-text">${msg.text}</div>
-          <button class="gacha-voice-btn" type="button" onclick="playGachaVoice('${msg.voiceSrc}', this)">🔊 ฟังเสียงให้กำลังใจ</button>
           <div class="gacha-card-num">ข้อความที่ ${idx+1} / ${GACHA_MSGS.length}</div>
         </div>`;
-      const voiceButton = result.querySelector('.gacha-voice-btn');
-      playGachaVoice(msg.voiceSrc, voiceButton);
       btn.style.display='block';
       hint.textContent='✨ หมุนอีกครั้งเพื่อรับข้อความใหม่ ✨';
       result.scrollIntoView({behavior:'smooth',block:'nearest'});
