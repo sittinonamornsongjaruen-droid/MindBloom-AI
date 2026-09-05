@@ -345,7 +345,6 @@
   /* result card */
   .gacha-card { width:100%; background:rgba(255,252,248,.97); border:2px solid rgba(184,168,207,.5); border-radius:24px; padding:26px 22px 20px; box-shadow:0 8px 32px rgba(180,140,220,.2); animation:gachaReveal .4s ease; text-align:center; margin-top:6px; }
   .gacha-card-text { font-size:1.08rem; color:var(--text-dark); line-height:1.8; }
-  .gacha-card-num { font-size:.72rem; color:var(--text-light); margin-top:12px; letter-spacing:.05em; }
 
   .gacha-spin-btn { width:100%; padding:15px; border:none; border-radius:16px; font-family:'Sriracha','Caveat',cursive; font-size:1.05rem; font-weight:700; cursor:pointer; transition:all .2s; background:linear-gradient(135deg,#a78bfa,#7c3aed); color:#fff; box-shadow:0 4px 16px rgba(124,58,237,.35); margin-top:14px; }
   .gacha-spin-btn:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(124,58,237,.5); }
@@ -6773,17 +6772,40 @@ function playGachaSuccess() {
   } catch(e) { console.warn('gacha play err', e); }
 }
 
+let _gachaVoiceCtx = null;
+let _gachaVoiceGain = null;
+let _gachaVoiceSource = null;
+
 function playGachaVoice(src) {
   const audio = document.getElementById('gachaVoice');
   if (!audio || !src) return;
 
+  try {
+    if (!_gachaVoiceCtx) {
+      _gachaVoiceCtx = new (window.AudioContext || window.webkitAudioContext)();
+      _gachaVoiceSource = _gachaVoiceCtx.createMediaElementSource(audio);
+      _gachaVoiceGain = _gachaVoiceCtx.createGain();
+      _gachaVoiceGain.gain.value = 2.2;
+      _gachaVoiceSource.connect(_gachaVoiceGain);
+      _gachaVoiceGain.connect(_gachaVoiceCtx.destination);
+    }
+    if (_gachaVoiceCtx.state === 'suspended') _gachaVoiceCtx.resume();
+  } catch (error) {
+    console.warn('gacha voice boost unavailable', error);
+  }
+
+  audio.crossOrigin = 'anonymous';
   audio.pause();
   audio.currentTime = 0;
   audio.src = src;
   audio.volume = 1;
+  audio.load();
   const playPromise = audio.play();
   if (playPromise && typeof playPromise.catch === 'function') {
-    playPromise.catch((error) => console.warn('gacha voice play err', error));
+    playPromise.catch((error) => {
+      console.warn('gacha voice play err', error);
+      audio.addEventListener('canplay', () => audio.play().catch(() => {}), {once:true});
+    });
   }
 }
 
