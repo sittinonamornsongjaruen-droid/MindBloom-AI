@@ -371,6 +371,9 @@
   @keyframes gachaReveal { from{opacity:0;transform:scale(.85) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
   .gacha-result-text { font-size:1.05rem; color:var(--text-dark); line-height:1.7; }
   .gacha-result-emoji { font-size:1.6rem; margin-bottom:8px; }
+  .gacha-voice-btn { margin-top:14px; padding:9px 14px; border:1px solid rgba(184,168,207,.5); border-radius:12px; background:rgba(221,213,232,.35); color:var(--text-mid); font-family:'Sriracha','Caveat',cursive; font-size:.86rem; cursor:pointer; transition:all .2s; }
+  .gacha-voice-btn:hover { background:rgba(221,213,232,.7); transform:translateY(-1px); }
+  .gacha-voice-btn:disabled { cursor:wait; opacity:.7; }
   .gacha-btn-row { display:flex; gap:10px; margin-top:14px; }
   .gacha-again-btn { flex:1; padding:11px; border:none; border-radius:12px; font-family:'Sriracha','Caveat',cursive; font-size:.9rem; font-weight:600; cursor:pointer; transition:all .2s; background:linear-gradient(135deg,rgba(221,213,232,.6),rgba(200,180,230,.5)); color:var(--text-mid); border:1.5px solid rgba(184,168,207,.4); }
   .gacha-again-btn:hover { background:linear-gradient(135deg,rgba(221,213,232,.9),rgba(200,180,230,.8)); transform:translateY(-2px); }
@@ -5437,6 +5440,7 @@ button,
 
     <!-- result card -->
     <div id="gachaResultCard" style="display:none;width:100%"></div>
+    <audio id="gachaVoice" preload="none"></audio>
 
     <!-- spin again btn -->
     <button class="gacha-spin-btn" id="gachaSpinBtn" onclick="doGachaSpin()" style="display:none">
@@ -6682,26 +6686,25 @@ function resetTarot() {
 //  GACHA PAGE
 // ════════════════════════════════
 const GACHA_MSGS = [
-  { emoji:'🌱', text:'ต้นไม้ที่สวยงาม ไม่มีทางโตได้ในวันเดียว' },
-  { emoji:'🎁', text:'ของขวัญที่ดีที่สุด คือการได้เห็นตัวเองมีความสุข' },
-  { emoji:'☀️', text:'ท้องฟ้าสดใสเสมอ หากเรามองมันด้วยใจ' },
-  { emoji:'🌅', text:'การได้ตื่นมาใช้ชีวิตในทุกๆ วัน คือโอกาสที่ดีที่สุดแล้ว' },
-  { emoji:'🏖️', text:'มองปัญหาให้เหมือนกับเม็ดทราย ถึงจะเยอะมากมาย แต่ก็เล็กแค่นิดเดียว' },
-  { emoji:'🌈', text:'ถ้าไม่เจอเรื่องแย่ๆ ซะบ้างเราคงไม่รู้ว่าเรื่องดีๆ มีค่าแค่ไหน' },
-  { emoji:'✨', text:'สิ่งที่กำลังจะมาถึง ย่อมดีกว่าสิ่งที่ผ่านไปแล้วแน่นอน' },
-  { emoji:'🛋️', text:'ถ้าคุณรู้สึกเหนื่อย จงเรียนรู้ที่จะพัก แต่อย่าล้มเลิก' },
-  { emoji:'💪', text:'ความเจ็บปวดของเมื่อวาน จะกลายเป็นความเข้มแข็งในวันนี้' },
-  { emoji:'🕊️', text:'ให้ที่ดีคือให้อภัย ให้ต่อไปคือให้โอกาสตัวเอง' },
-  { emoji:'🗺️', text:'หมื่นทางตัน ยังมีทางหนึ่งให้ออกเสมอ' },
-  { emoji:'🌿', text:'ทุกความเจ็บปวด ล้วนทำให้เราเติบโต' },
-  { emoji:'🌤️', text:'มันก็เป็นแค่วันแย่ๆ แต่ไม่ใช่ทั้งชีวิตหรอกที่แย่' },
-  { emoji:'💫', text:'ไม่สมหวังไม่เป็นไร ขอแค่ได้เริ่มทำด้วยใจก็เพียงพอแล้ว' },
-  { emoji:'🦋', text:'ทุกคนมีสิทธิ์เติบโตและสวยงามได้ในแบบฉบับของตัวเอง โดยที่ไม่ต้องเทียบกับชีวิตใคร' },
-  { emoji:'🕰️', text:'อย่าไปเสียดายกับเรื่องที่ผ่านมา แต่จงมีความสุขกับเวลาที่เหลือ' },
-  { emoji:'🌻', text:'ให้อดีตทำให้คุณเป็นคนที่ดีกว่าเดิม ไม่ใช่ทุกข์ใจกว่าเดิม' },
-  { emoji:'🔄', text:'เวลาที่เสียไป ไม่ต้องเสียดาย เราเริ่มต้นใหม่ได้เสมอ' },
-  { emoji:'🌙', text:'แม้คืนนี้จะมืด แต่รุ่งเช้ายังรอคุณอยู่เสมอ' },
-  { emoji:'💝', text:'คุณมีคุณค่ามากกว่าที่คุณคิด เสมอ' },
+  { emoji:'🌱', text:'ต้นไม้ที่สวยงาม ไม่มีทางโตได้ในวันเดียว', voiceSrc:'https://drive.google.com/uc?export=download&id=1wgzAv3JomYQe3dKkuY6vD0lWlVxClTgq' },
+  { emoji:'🎁', text:'ของขวัญที่ดีที่สุด คือการได้เห็นตัวเองมีความสุข', voiceSrc:'https://drive.google.com/uc?export=download&id=1jha4KkMtWs_lSr0hNOwYofSViXr9OJsR' },
+  { emoji:'☀️', text:'ท้องฟ้าสดใสเสมอ หากเรามองมันด้วยใจ', voiceSrc:'https://drive.google.com/uc?export=download&id=1KLh_45lidp4dH_evWifqESZK7HOVIcfH' },
+  { emoji:'🌅', text:'การได้ตื่นมาใช้ชีวิตในทุกๆ วัน คือโอกาสที่ดีที่สุดแล้ว', voiceSrc:'https://drive.google.com/uc?export=download&id=14KEJ6UmVwpsZa9mg1V9OrVqaDktYjkph' },
+  { emoji:'🏖️', text:'มองปัญหาให้เหมือนกับเม็ดทราย ถึงจะเยอะมากมาย แต่ก็เล็กแค่นิดเดียว', voiceSrc:'https://drive.google.com/uc?export=download&id=17TLEjcCjcNwePDfFKOauPgoGA07bkYJR' },
+  { emoji:'🌈', text:'ถ้าไม่เจอเรื่องแย่ๆ ซะบ้างเราคงไม่รู้ว่าเรื่องดีๆ มีค่าแค่ไหน', voiceSrc:'https://drive.google.com/uc?export=download&id=17X_WecupKXwoILcLkR5hE5DJE0MghsDd' },
+  { emoji:'✨', text:'สิ่งที่กำลังจะมาถึง ย่อมดีกว่าสิ่งที่ผ่านไปแล้วแน่นอน', voiceSrc:'https://drive.google.com/uc?export=download&id=1UzlsfYOT86JQt0vy0KGNhAv9sdeJj07T' },
+  { emoji:'🛋️', text:'ถ้าคุณรู้สึกเหนื่อย จงเรียนรู้ที่จะพัก แต่อย่าล้มเลิก', voiceSrc:'https://drive.google.com/uc?export=download&id=1x7wY3U39qxmr4X0kM_oEr_YCQCohpVzm' },
+  { emoji:'💪', text:'ความเจ็บปวดของเมื่อวาน จะกลายเป็นความเข้มแข็งในวันนี้', voiceSrc:'https://drive.google.com/uc?export=download&id=1mpKUO6UWiyzhTugzUBdSTEbcuBRT1Pub' },
+  { emoji:'🕊️', text:'ให้ที่ดีคือการให้อภัย ให้ต่อไปคือให้โอกาสตัวเอง', voiceSrc:'https://drive.google.com/uc?export=download&id=1b7JhKIl-e4VEkJRyrPr02z3-KIHJQrq8' },
+  { emoji:'🗺️', text:'หมื่นทางตัน ยังมีทางหนึ่งให้ออกเสมอ', voiceSrc:'https://drive.google.com/uc?export=download&id=12KiWQzP6bU_LrPotHMoYCJCGDLO_mS86' },
+  { emoji:'🌿', text:'ทุกความเจ็บปวด ล้วนทำให้เราเติบโต', voiceSrc:'https://drive.google.com/uc?export=download&id=1_AsJOXuMq_JQTE410APh5ADAgJakKEyt' },
+  { emoji:'🌤️', text:'มันก็เป็นแค่วันแย่ๆ แต่ไม่ใช่ทั้งชีวิตหรอกที่แย่', voiceSrc:'https://drive.google.com/uc?export=download&id=1S1Snt8EKTmKMxbe-OR2DaRg8WIITFB4w' },
+  { emoji:'💫', text:'ไม่สมหวังไม่เป็นไร ขอแค่ได้เริ่มทำด้วยใจก็เพียงพอแล้ว', voiceSrc:'https://drive.google.com/uc?export=download&id=1Um17a5lrKMEzwfRc1bvJx3ZCeIDXbFoQ' },
+  { emoji:'🦋', text:'ทุกคนมีสิทธิ์เติบโตและสวยงามได้ในแบบฉบับของตัวเอง โดยที่ไม่ต้องเทียบกับชีวิตใคร', voiceSrc:'https://drive.google.com/uc?export=download&id=1oYLhkQsgdraJPwGVKTF8-MXdU2_5BPMZ' },
+  { emoji:'🕰️', text:'อย่าไปเสียดายกับเรื่องที่ผ่านมา แต่จงมีความสุขกับเวลาที่เหลือ', voiceSrc:'https://drive.google.com/uc?export=download&id=1J1j82IHAgJ9YqJFLIR_J_Il54tGn56jI' },
+  { emoji:'🌻', text:'ให้อดีตทำให้คุณเป็นคนที่ดีกว่าเดิม ไม่ใช่ทุกข์ใจกว่าเดิม', voiceSrc:'https://drive.google.com/uc?export=download&id=1o6ZY1zdpkf4UPC13bjNXDW2JH3nvDDF3' },
+  { emoji:'🔄', text:'เวลาที่เสียไป ไม่ต้องเสียดาย เราเริ่มต้นใหม่ได้เสมอ', voiceSrc:'https://drive.google.com/uc?export=download&id=159TuKeL1YJDnl-Tdi6yWFlNIIWAGhiM5' },
+  
 ];
 
 let _gShuffled = [];
@@ -6773,6 +6776,32 @@ function playGachaSuccess() {
   } catch(e) { console.warn('gacha play err', e); }
 }
 
+function playGachaVoice(src, button) {
+  const audio = document.getElementById('gachaVoice');
+  if (!audio || !src) return;
+
+  audio.pause();
+  audio.currentTime = 0;
+  audio.src = src;
+  button.disabled = true;
+  button.textContent = '🔊 กำลังเล่น...';
+
+  const playPromise = audio.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise.then(() => {
+      button.disabled = false;
+      button.textContent = '🔊 เล่นเสียงอีกครั้ง';
+    }).catch(() => {
+      button.disabled = false;
+      button.textContent = '▶️ แตะเพื่อฟังเสียง';
+    });
+  }
+  audio.onended = () => {
+    button.disabled = false;
+    button.textContent = '🔊 เล่นเสียงอีกครั้ง';
+  };
+}
+
 document.addEventListener('click', _loadGachaSound, {once: true});
 document.addEventListener('touchstart', _loadGachaSound, {once: true});
 
@@ -6818,8 +6847,11 @@ function doGachaSpin() {
         <div class="gacha-card">
           <div style="font-size:2rem;margin-bottom:8px">${msg.emoji}</div>
           <div class="gacha-card-text">${msg.text}</div>
+          <button class="gacha-voice-btn" type="button" onclick="playGachaVoice('${msg.voiceSrc}', this)">🔊 ฟังเสียงให้กำลังใจ</button>
           <div class="gacha-card-num">ข้อความที่ ${idx+1} / ${GACHA_MSGS.length}</div>
         </div>`;
+      const voiceButton = result.querySelector('.gacha-voice-btn');
+      playGachaVoice(msg.voiceSrc, voiceButton);
       btn.style.display='block';
       hint.textContent='✨ หมุนอีกครั้งเพื่อรับข้อความใหม่ ✨';
       result.scrollIntoView({behavior:'smooth',block:'nearest'});
