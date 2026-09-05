@@ -6746,6 +6746,13 @@ async function _loadGachaSound() {
     _gachaAudioBuf = await _gachaAudioCtx.decodeAudioData(_b64ToArrayBuffer(b64));
   } catch(e) { console.warn('gacha load err', e); }
 }
+function _unlockGachaAudio() {
+  try {
+    if (!_gachaAudioCtx) _gachaAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_gachaAudioCtx.state === 'suspended') _gachaAudioCtx.resume();
+    if (!_gachaAudioBuf) _loadGachaSound();
+  } catch(e) { console.warn('gacha unlock err', e); }
+}
 
 function playGachaSuccess() {
   try {
@@ -6821,6 +6828,10 @@ function doGachaSpin() {
   const capsule = document.getElementById('gachaCapsule');
   const result  = document.getElementById('gachaResultCard');
   const btn     = document.getElementById('gachaSpinBtn');
+
+  _unlockGachaAudio(); // ปลดล็อกเสียงทันทีตอนคลิก (อยู่ใน user-gesture)
+
+  // shake machine
   const idx     = _gPick();
   const msg     = GACHA_MSGS[idx];
 
