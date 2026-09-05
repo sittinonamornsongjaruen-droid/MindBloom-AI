@@ -6787,21 +6787,6 @@ function playGachaVoice(src) {
   const audio = document.getElementById('gachaVoice');
   if (!audio || !src) return;
 
-  try {
-    if (!_gachaVoiceCtx) {
-      _gachaVoiceCtx = new (window.AudioContext || window.webkitAudioContext)();
-      _gachaVoiceSource = _gachaVoiceCtx.createMediaElementSource(audio);
-      _gachaVoiceGain = _gachaVoiceCtx.createGain();
-      _gachaVoiceGain.gain.value = 2.2;
-      _gachaVoiceSource.connect(_gachaVoiceGain);
-      _gachaVoiceGain.connect(_gachaVoiceCtx.destination);
-    }
-    if (_gachaVoiceCtx.state === 'suspended') _gachaVoiceCtx.resume();
-  } catch (error) {
-    console.warn('gacha voice boost unavailable', error);
-  }
-
-  audio.crossOrigin = 'anonymous';
   audio.pause();
   audio.currentTime = 0;
   audio.src = src;
