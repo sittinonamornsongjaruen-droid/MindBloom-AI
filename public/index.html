@@ -6787,6 +6787,11 @@ function playGachaVoice(src) {
   const audio = document.getElementById('gachaVoice');
   if (!audio || !src) return;
 
+  // Use Google's media endpoint, which exposes the audio with CORS enabled.
+  src = src.replace(
+    'https://drive.google.com/uc?export=download&id=',
+    'https://drive.usercontent.google.com/download?export=download&id='
+  );
   audio.pause();
   audio.currentTime = 0;
   audio.src = src;
