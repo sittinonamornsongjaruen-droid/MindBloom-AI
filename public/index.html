@@ -6762,7 +6762,7 @@ function playGachaSuccess() {
       const src = _gachaAudioCtx.createBufferSource();
       src.buffer = _gachaAudioBuf;
       const gain = _gachaAudioCtx.createGain();
-      gain.gain.value = 0.8;
+      gain.gain.value = 0.4;
       src.connect(gain);
       gain.connect(_gachaAudioCtx.destination);
       src.start(0);
@@ -6771,7 +6771,10 @@ function playGachaSuccess() {
         if (_gachaAudioBuf) {
           const src = _gachaAudioCtx.createBufferSource();
           src.buffer = _gachaAudioBuf;
-          src.connect(_gachaAudioCtx.destination);
+          const gain = _gachaAudioCtx.createGain();
+          gain.gain.value = 0.4; // ลดเสียงติ๊ง (เท่ากับจุดด้านบน)
+          src.connect(gain);
+          gain.connect(_gachaAudioCtx.destination);
           src.start(0);
         }
       });
@@ -6797,6 +6800,22 @@ function playGachaVoice(src) {
   audio.src = src;
   audio.volume = 1;
   audio.load();
+
+  // เพิ่มเสียงเกิน 100% ด้วย Web Audio API GainNode
+  try {
+    if (!_gachaVoiceCtx) _gachaVoiceCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_gachaVoiceCtx.state === 'suspended') _gachaVoiceCtx.resume();
+    if (!_gachaVoiceSource) {
+      // createMediaElementSource ใช้ได้แค่ครั้งเดียวต่อ audio element เดียวกัน
+      // จึงต้องสร้างครั้งแรกครั้งเดียวแล้วเก็บไว้ใช้ซ้ำ
+      _gachaVoiceSource = _gachaVoiceCtx.createMediaElementSource(audio);
+      _gachaVoiceGain = _gachaVoiceCtx.createGain();
+      _gachaVoiceSource.connect(_gachaVoiceGain);
+      _gachaVoiceGain.connect(_gachaVoiceCtx.destination);
+    }
+    _gachaVoiceGain.gain.value = 1.8; // ปรับตัวเลขนี้เพื่อเพิ่ม/ลดความดัง (1 = ปกติ, 1.8 = ดังขึ้น ~80%)
+  } catch(e) { console.warn('gacha voice gain err', e); }
+
   const playPromise = audio.play();
   if (playPromise && typeof playPromise.catch === 'function') {
     playPromise.catch((error) => {
