@@ -6762,7 +6762,7 @@ function playGachaSuccess() {
       const src = _gachaAudioCtx.createBufferSource();
       src.buffer = _gachaAudioBuf;
       const gain = _gachaAudioCtx.createGain();
-      gain.gain.value = 0.4;
+      gain.gain.value = 0.2;
       src.connect(gain);
       gain.connect(_gachaAudioCtx.destination);
       src.start(0);
@@ -6772,7 +6772,7 @@ function playGachaSuccess() {
           const src = _gachaAudioCtx.createBufferSource();
           src.buffer = _gachaAudioBuf;
           const gain = _gachaAudioCtx.createGain();
-          gain.gain.value = 0.4; // ลดเสียงติ๊ง (เท่ากับจุดด้านบน)
+          gain.gain.value = 0.2; // ลดเสียงติ๊ง (เท่ากับจุดด้านบน)
           src.connect(gain);
           gain.connect(_gachaAudioCtx.destination);
           src.start(0);
@@ -6813,7 +6813,7 @@ function playGachaVoice(src) {
       _gachaVoiceSource.connect(_gachaVoiceGain);
       _gachaVoiceGain.connect(_gachaVoiceCtx.destination);
     }
-    _gachaVoiceGain.gain.value = 1.8; // ปรับตัวเลขนี้เพื่อเพิ่ม/ลดความดัง (1 = ปกติ, 1.8 = ดังขึ้น ~80%)
+    _gachaVoiceGain.gain.value = 2.5; // ปรับตัวเลขนี้เพื่อเพิ่ม/ลดความดัง (1 = ปกติ, 1.8 = ดังขึ้น ~80%)
   } catch(e) { console.warn('gacha voice gain err', e); }
 
   const playPromise = audio.play();
