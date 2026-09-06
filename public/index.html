@@ -6813,7 +6813,7 @@ function playGachaVoice(src) {
       _gachaVoiceSource.connect(_gachaVoiceGain);
       _gachaVoiceGain.connect(_gachaVoiceCtx.destination);
     }
-    _gachaVoiceGain.gain.value = 2.5; // ปรับตัวเลขนี้เพื่อเพิ่ม/ลดความดัง (1 = ปกติ, 1.8 = ดังขึ้น ~80%)
+    _gachaVoiceGain.gain.value = 3.5; // ปรับตัวเลขนี้เพื่อเพิ่ม/ลดความดัง (1 = ปกติ, 1.8 = ดังขึ้น ~80%)
   } catch(e) { console.warn('gacha voice gain err', e); }
 
   const playPromise = audio.play();
