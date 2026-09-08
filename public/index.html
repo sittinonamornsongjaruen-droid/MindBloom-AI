@@ -6141,6 +6141,54 @@ let chatHistory = [];
 let msgCount = 0;
 let currentStressLevel = 'green';
 
+const GSR_SOCKET_URL = `wss://${location.host}/ws/sensor`;
+const GSR_BASELINE_SAMPLES = 20;
+const GSR_WINDOW_SIZE = 10;
+const GSR_HIGH_DEVIATION = 0.18;
+let gsrSocket = null;
+let gsrBaseline = null;
+let gsrBaselineSamples = [];
+let gsrSamples = [];
+let gsrHighSince = 0;
+
+function startGsrReceiver() {
+  if (!location.host || typeof WebSocket === 'undefined') return;
+  gsrSocket = new WebSocket(GSR_SOCKET_URL);
+  gsrSocket.onmessage = event => {
+    const value = Number.parseFloat(String(event.data).trim());
+    if (!Number.isFinite(value)) return;
+    if (gsrBaseline === null) {
+      gsrBaselineSamples.push(value);
+      if (gsrBaselineSamples.length >= GSR_BASELINE_SAMPLES) {
+        gsrBaseline = gsrBaselineSamples.reduce((sum, sample) => sum + sample, 0) / gsrBaselineSamples.length;
+        gsrBaselineSamples.length = 0;
+      }
+      return;
+    }
+    gsrSamples.push(value);
+    if (gsrSamples.length > GSR_WINDOW_SIZE) gsrSamples.shift();
+    const average = gsrSamples.reduce((sum, sample) => sum + sample, 0) / gsrSamples.length;
+    if (average > gsrBaseline * (1 + GSR_HIGH_DEVIATION)) {
+      if (!gsrHighSince) gsrHighSince = Date.now();
+    } else {
+      gsrHighSince = 0;
+    }
+  };
+  gsrSocket.onclose = () => {
+    gsrSocket = null;
+    setTimeout(startGsrReceiver, 5000);
+  };
+}
+
+function combineGsrWithStress(level) {
+  if (!gsrBaseline || !gsrHighSince || Date.now() - gsrHighSince < 3000) return level;
+  const order = ['green', 'yellow', 'red', 'purple'];
+  const index = order.indexOf(level);
+  return index >= 0 && index < 2 ? order[index + 1] : level;
+}
+
+startGsrReceiver();
+
 const SYSTEM_PROMPT = `คุณคือ "เรย์" นักจิตวิทยาอาสาของ MindBloom 
 
 ประวัติและตัวตนของคุณ:
@@ -6472,7 +6520,7 @@ async function sendMsg() {
 
     chatHistory.push({ role: 'assistant', content: parsed.reply });
 
-    const level = ['green', 'yellow', 'red', 'purple'].includes(parsed.stress) ? parsed.stress : currentStressLevel;
+    const level = combineGsrWithStress(['green', 'yellow', 'red', 'purple'].includes(parsed.stress) ? parsed.stress : currentStressLevel);
     const reason = parsed.stress_reason || '';
     recordMoodEntry(level, reason);
     const prevLevel = currentStressLevel;
