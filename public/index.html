@@ -391,7 +391,8 @@
   .gsr-status-dot.live { background:var(--sage-dark); box-shadow:0 0 0 4px rgba(154,176,142,.18); }
   .gsr-status-dot.down { background:var(--red-stress); box-shadow:0 0 0 4px rgba(224,112,112,.16); }
   .gsr-mood { text-align:center; padding:2px 0 18px; }
-  .gsr-mood-emoji { font-size:4rem; line-height:1.15; min-height:74px; }
+  .gsr-mood-emoji { width:92px; height:92px; margin:0 auto 10px; transition:transform .4s ease; }
+  .gsr-mood-emoji img { width:100%; height:100%; object-fit:contain; display:block; }
   .gsr-mood-label { font-size:1.12rem; font-weight:600; margin-bottom:10px; color:var(--text-light); }
   .gsr-value-row { display:flex; align-items:baseline; justify-content:center; gap:7px; }
   .gsr-value { font-size:2.6rem; font-weight:400; line-height:1; font-variant-numeric:tabular-nums; }
@@ -5498,7 +5499,7 @@ button,
         <div class="gsr-status"><span class="gsr-status-dot" id="gsrStatusDot"></span><span id="gsrStatusText">ยังไม่เชื่อมต่อ</span></div>
       </div>
       <div class="gsr-mood">
-        <div class="gsr-mood-emoji" id="gsrMoodEmoji">🌿</div>
+        <div class="gsr-mood-emoji" id="gsrMoodEmoji"></div>
         <div class="gsr-mood-label" id="gsrMoodLabel">รอค่าจากเซ็นเซอร์</div>
         <div class="gsr-value-row"><span class="gsr-value" id="gsrValue">--</span><span class="gsr-unit">/ 4095</span></div>
         <p class="gsr-disclaimer">ระดับนี้ประมาณจากค่าดิบของเซ็นเซอร์แบบคร่าวๆ เพื่อการทดสอบเท่านั้น ไม่ใช่การวัดผลทางการแพทย์</p>
@@ -5874,11 +5875,11 @@ function setGsrStatus(state) {
 }
 
 function gsrMoodFor(value) {
-  if (value <= 800) return { emoji:'😌', label:'ผ่อนคลายมาก', color:'#6db87a' };
-  if (value <= 1600) return { emoji:'🙂', label:'ผ่อนคลาย', color:'#93a980' };
-  if (value <= 2400) return { emoji:'😐', label:'ปกติ', color:'#d19a39' };
-  if (value <= 3200) return { emoji:'😟', label:'เริ่มตึงเครียด', color:'#e08a72' };
-  return { emoji:'😣', label:'เครียดสูง', color:'#d9636b' };
+  if (value <= 800) return { img:'https://drive.google.com/thumbnail?id=1ouR-YCAt19fe91K19-mCVaEIuAOt_ztY&sz=w1000', label:'ผ่อนคลายมาก', color:'#6db87a' };
+  if (value <= 1600) return { img:'https://drive.google.com/thumbnail?id=1ouR-YCAt19fe91K19-mCVaEIuAOt_ztY&sz=w1000', label:'ผ่อนคลาย', color:'#93a980' };
+  if (value <= 2400) return { img:'https://drive.google.com/thumbnail?id=1xIjYxwNDpsGYkzJ_SPdft_SG3e8ZqpwZ&sz=w1000', label:'ปกติ', color:'#d19a39' };
+  if (value <= 3200) return { img:'https://drive.google.com/thumbnail?id=1C8xok0XZxGk64JptS4BlPN2-kI-WC3pQ&sz=w1000', label:'เริ่มตึงเครียด', color:'#e08a72' };
+  return { img:'https://drive.google.com/thumbnail?id=1hy4z_gGkmpXN5n375bwphmc29otVh9sQ&sz=w1000', label:'เครียดสูง', color:'#d9636b' };
 }
 
 function drawGsrChart() {
@@ -5918,7 +5919,7 @@ function handleGsrValue(raw) {
   const now = Date.now();
   const mood = gsrMoodFor(value);
   document.getElementById('gsrValue').textContent = Math.round(value);
-  document.getElementById('gsrMoodEmoji').textContent = mood.emoji;
+  document.getElementById('gsrMoodEmoji').innerHTML = `<img src="${mood.img}" alt="${mood.label}">`;
   document.getElementById('gsrMoodLabel').textContent = mood.label;
   document.getElementById('gsrMoodLabel').style.color = mood.color;
   document.getElementById('gsrLastUpdate').textContent = 'อัปเดตล่าสุด ' + new Date(now).toLocaleTimeString('th-TH');
